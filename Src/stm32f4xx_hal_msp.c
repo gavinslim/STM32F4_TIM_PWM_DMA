@@ -42,17 +42,20 @@ extern DMA_HandleTypeDef hdma_tim2_ch1;
 
 void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim)
 {
-  GPIO_InitTypeDef   GPIO_InitStruct;
-  static DMA_HandleTypeDef  hdma_tim2_ch1;
+  //GPIO_InitTypeDef   GPIO_InitStruct;
+  //static DMA_HandleTypeDef  hdma_tim2_ch1;
 
   // ----------------------------------
   // Enable peripherals and GPIO Clocks
   // ----------------------------------
 
+  /*
   __HAL_RCC_TIM2_CLK_ENABLE();	// Enable TIM2 clock
 	__HAL_RCC_GPIOA_CLK_ENABLE();	// Enable TIM2 GPIO clock
 	__HAL_RCC_DMA1_CLK_ENABLE();	// Enable DMA1 clock
+	*/
 
+	/*
   // Configure TIM2_Channel 1 (PA0) as output, push-pull and alternate function mode
   GPIO_InitStruct.Pin = GPIO_PIN_0;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
@@ -60,7 +63,9 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+	*/
 
+	/*
   // Configure DMA1 parameters
   // Based on RM0383 STM32F411 Ref Manual (Table 27), TIM2_CH1 corresponds to DMA1 Channel 3 Stream 5
   hdma_tim2_ch1.Instance = DMA1_Stream5;
@@ -94,6 +99,7 @@ void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim)
   // NVIC configuration for DMA transfer complete interrupt
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  */
 }
 
 

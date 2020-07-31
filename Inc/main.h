@@ -27,7 +27,7 @@
 
 /* Exported functions prototypes ---------------------------------------------*/
 //void Error_Handler(void);
-void Error_Handler(void);
+void Error_Handler(uint8_t ERROR);
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
@@ -59,6 +59,15 @@ void Error_Handler(void);
 #define TCK_GPIO_Port GPIOA
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
+
+/* Errors */
+#define SYSCONF_ERROR1 		0
+#define SYSCONF_ERROR2 		1
+#define EN_PWM_ERROR 			2
+#define TIM_CONFIG_ERROR 	3
+#define TIM_INIT_ERROR 		4
+#define GPIO_ERROR				5
+#define DMA_ERROR					6
 
 #endif /* __MAIN_H */
 
