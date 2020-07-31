@@ -18,4 +18,6 @@
 #define TMP_LED_SIZE              74
 //uint32_t * resetPulse(uint32_t uwTimerPeriod);
 
+static uint8_t LED_colors[LED_CFG_BYTES_PER_LED * LED_CFG_STRIP_CNT];
+
 #endif /* W2812B_H_ */

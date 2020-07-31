@@ -23,6 +23,13 @@
 #include "w2812b.h"
 
 /* Private typedef -----------------------------------------------------------*/
+GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+TIM_HandleTypeDef htim2 = {0};
+TIM_OC_InitTypeDef sConfigOC = {0};
+
+DMA_HandleTypeDef hdma_tim2_ch1 = {0};
+
 /* Private define ------------------------------------------------------------*/
 
 /* Private macro -------------------------------------------------------------*/
@@ -47,6 +54,49 @@ uint32_t uwTimerPeriod  = 0;
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void LED_Init(void);
+
+static uint8_t LED_set_color_all(uint8_t red, uint8_t green, uint8_t blue){
+	size_t index;
+	for (index = 0; index < LED_CFG_STRIP_CNT; index++){
+		LED_colors[index * LED_CFG_BYTES_PER_LED + 0] = red;
+		LED_colors[index * LED_CFG_BYTES_PER_LED + 1] = green;
+		LED_colors[index * LED_CFG_BYTES_PER_LED + 2] = blue;
+	}
+	return 1;
+}
+
+static uint8_t led_reset_pulse(void){
+
+	// Stop PWM generation from DMA1
+	//HAL_TIM_PWM_Stop_DMA(&htim2, TIM_CHANNEL_1);
+	//HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
+
+
+	// Modify DMA config to Normal Mode
+  hdma_tim2_ch1.Init.Mode = DMA_NORMAL;
+
+  // Set all data for tmp_led_data to 0
+  memset(tmp_led_data, 0, sizeof(tmp_led_data));
+
+  uint32_t index;
+  for (index = 0; index < LED_CFG_BITS_PER_LED; index++) {
+  	tmp_led_data[index] = (uint32_t)(((uint32_t) 50 * (uwTimerPeriod - 1)) / 100);
+  }
+
+  // Initialize TIM2 DMA handle
+  if (HAL_DMA_Init(&hdma_tim2_ch1) != HAL_OK) {
+    Error_Handler(DMA_ERROR);
+  }
+
+	//__HAL_DMA_ENABLE(&hdma_tim2_ch1);
+  // Start PWM generation from DMA1
+  // Set memory address = tmp_led_data, with data length = TMP_LED_SIZE
+  if (HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, tmp_led_data, TMP_LED_SIZE) != HAL_OK){
+    Error_Handler(EN_PWM_ERROR);
+  }
+
+  return 1;
+}
 
 void blue(void){
   uint32_t index;
@@ -155,11 +205,8 @@ int main(void)
 
   HAL_Init();
 
-  /* Configure the system clock to 180 MHz */
-  SystemClock_Config();
-
-  // Initialize and start GPIO for TIM2
-  LED_Init();
+  SystemClock_Config();		// Configure system clock to 180MHz
+  LED_Init();							// Initialize and start GPIO for TIM2
 
   // Compute the value of ARR regiter to generate signal frequency at 800kHz
   uwTimerPeriod = (uint32_t)((SystemCoreClock / 800000) - 1);
@@ -167,8 +214,10 @@ int main(void)
   //orange();
   uint32_t index;
   for (index = 0; index < LED_CFG_BITS_PER_LED; index++) {
-  	tmp_led_data[index] = (uint32_t)(((uint32_t) 67 * (uwTimerPeriod - 1)) / 100);
+  	tmp_led_data[index] = (uint32_t)(((uint32_t) 80 * (uwTimerPeriod - 1)) / 100);
   }
+
+  led_reset_pulse();
 
   //HAL_DMAEx_MultiBufferStart
   //__HAL_DMA_ENABLE(&htim2);
@@ -281,37 +330,28 @@ void SystemClock_Config(void)
 
 static void LED_Init(void)
 {
-	TIM_HandleTypeDef htim2;
-	TIM_OC_InitTypeDef sConfigOC = {0};
-
-	DMA_HandleTypeDef hdma_tim2_ch1;
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
 
 
   /* ------------- */
   /*  GPIO Config  */
   /* ------------- */
 
-  __HAL_RCC_TIM2_CLK_ENABLE();	// Enable TIM2 clock
-	__HAL_RCC_GPIOA_CLK_ENABLE();	// Enable TIM2 GPIO clock
-	__HAL_RCC_DMA1_CLK_ENABLE();	// Enable DMA1 clock
-
-  //GPIO Ports Clock Enable
+  // GPIO Ports Clock Enable
   __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
   __HAL_RCC_GPIOA_CLK_ENABLE();
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
-  //Configure GPIO pin Output Level
+  // Configure GPIO pin Output Level
   HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
 
-  //Configure GPIO pin : B1_Pin
+  // Configure GPIO pin : B1_Pin
   GPIO_InitStruct.Pin = B1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
 
-  //Configure GPIO pin : LD2_Pin
+  // Configure GPIO pin : LD2_Pin
   GPIO_InitStruct.Pin = LD2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
@@ -329,19 +369,24 @@ static void LED_Init(void)
   /* -------------- */
   /* TIM2 Channel 1 */
   /* -------------- */
+
+  // Enable TIM2 clock
+  __HAL_RCC_TIM2_CLK_ENABLE();
+
+  // TIM Time Base handle Structure definition
   htim2.Instance               = TIM2;
   htim2.Init.Prescaler         = 0;
   htim2.Init.CounterMode       = TIM_COUNTERMODE_UP;
   htim2.Init.Period            = 104;
   htim2.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
   htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
-  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK)			// Calls HAL_TIM_PWM_MspInit()
-  {
-    // Initialization Error
-    Error_Handler(TIM_INIT_ERROR);
+
+  // Note: HAL_TIM_PWM_Init() calls HAL_TIM_PWM_MspInit()
+  if (HAL_TIM_PWM_Init(&htim2) != HAL_OK) {
+    Error_Handler(TIM_INIT_ERROR);     // Initialization Error
   }
 
-  // Configure PWM Channel
+  // Set TIM Output Compare (OC) Configuration Structure definition
   sConfigOC.OCMode       = TIM_OCMODE_PWM1;
   sConfigOC.OCPolarity   = TIM_OCPOLARITY_HIGH;
   sConfigOC.Pulse        = 0;
@@ -349,14 +394,20 @@ static void LED_Init(void)
   sConfigOC.OCFastMode   = TIM_OCFAST_DISABLE;
   sConfigOC.OCIdleState  = TIM_OCIDLESTATE_RESET;
   sConfigOC.OCNIdleState = TIM_OCNIDLESTATE_RESET;
-  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
-  {
-    // Configuration Error
-    Error_Handler(TIM_CONFIG_ERROR);
+
+  // Apply TIM OC configs to htim2 (TIM2)
+  if (HAL_TIM_PWM_ConfigChannel(&htim2, &sConfigOC, TIM_CHANNEL_1) != HAL_OK) {
+    Error_Handler(TIM_CONFIG_ERROR); // Configuration Error
   }
 
-  // Configure DMA1 parameters
-  // Based on RM0383 STM32F411 Ref Manual (Table 27), TIM2_CH1 corresponds to DMA1 Channel 3 Stream 5
+  /* ------------------------------ */
+  /* DMA1 Channel 3 Stream 5 Config */
+  /* ------------------------------ */
+
+  // Enable DMA1 clock
+	__HAL_RCC_DMA1_CLK_ENABLE();
+
+	// DMA handle Structure definition (Based on RM0383 STM32F411 Ref Manual (Table 27) TIM2_CH1 corresponds to DMA1 Channel 3 Stream 5)
   hdma_tim2_ch1.Instance = DMA1_Stream5;
   hdma_tim2_ch1.Init.Channel = DMA_CHANNEL_3;
   hdma_tim2_ch1.Init.Direction = DMA_MEMORY_TO_PERIPH;							// Memory to Peripheral mode
@@ -365,7 +416,7 @@ static void LED_Init(void)
   hdma_tim2_ch1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD ;
   hdma_tim2_ch1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD ;
   hdma_tim2_ch1.Init.Mode = DMA_CIRCULAR;														// Set in circular mode
-  hdma_tim2_ch1.Init.Priority = DMA_PRIORITY_HIGH;
+  hdma_tim2_ch1.Init.Priority = DMA_PRIORITY_LOW;										// Low priority
   hdma_tim2_ch1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
   hdma_tim2_ch1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
   hdma_tim2_ch1.Init.MemBurst = DMA_MBURST_SINGLE;
@@ -374,23 +425,23 @@ static void LED_Init(void)
   // Enable Half-Transfer and Full-Transfer complete interrupts
   __HAL_DMA_ENABLE_IT(&hdma_tim2_ch1, (DMA_IT_TC | DMA_IT_HT));
 
-  // Link hdma_tim2_ch1 to hdma[TIM_DMA_ID_CC3] (channel3)
+  // Linking a PPP peripheral to DMA structure pointer (PPP = STM32 peripheral or block)
+  // hdma[TIM_DMA_ID_CC1] = Capture/Compare 1 DMA requests peripheral
+  // Link htim2 (TIM peripheral) to hdma_tim2_ch1 (DMA struc pointer) with TIM_DMA_ID_CC1
   __HAL_LINKDMA(&htim2, hdma[TIM_DMA_ID_CC1], hdma_tim2_ch1);
 
   // Initialize TIM2 DMA handle
-  //HAL_DMA_Init(htim->hdma[TIM_DMA_ID_CC1]);
-  if (HAL_DMA_Init(&hdma_tim2_ch1) != HAL_OK)
-  {
+  if (HAL_DMA_Init(&hdma_tim2_ch1) != HAL_OK) {
     Error_Handler(DMA_ERROR);
   }
 
   // Initiate PWM generation
-  if (HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, tmp_led_data, TMP_LED_SIZE) != HAL_OK)
-  {
+  /*
+  if (HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, tmp_led_data, TMP_LED_SIZE) != HAL_OK) {
     // Starting Error
     Error_Handler(EN_PWM_ERROR);
   }
-
+	*/
   // ##-2- Configure the NVIC for DMA #########################################
   // NVIC configuration for DMA transfer complete interrupt
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
