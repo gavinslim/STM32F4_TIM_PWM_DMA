@@ -2,7 +2,7 @@
 /**
   ******************************************************************************
   * File Name          : stm32f4xx_hal_msp.c
-  * Description        : This file provides code for the MSP Initialization 
+  * Description        : This file provides code for the MSP Initialization
   *                      and de-Initialization codes.
   ******************************************************************************
   * @attention
@@ -17,135 +17,96 @@
   *
   ******************************************************************************
   */
-/* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-/* USER CODE BEGIN Includes */
-
-/* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN TD */
-
-/* USER CODE END TD */
-
 /* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN Define */
- 
-/* USER CODE END Define */
-
 /* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN Macro */
-
-/* USER CODE END Macro */
-
 /* Private variables ---------------------------------------------------------*/
-/* USER CODE BEGIN PV */
-
-/* USER CODE END PV */
+extern DMA_HandleTypeDef hdma_tim2_ch1;
 
 /* Private function prototypes -----------------------------------------------*/
-/* USER CODE BEGIN PFP */
+/* Private functions ---------------------------------------------------------*/
 
-/* USER CODE END PFP */
-
-/* External functions --------------------------------------------------------*/
-/* USER CODE BEGIN ExternalFunctions */
-
-/* USER CODE END ExternalFunctions */
-
-/* USER CODE BEGIN 0 */
-
-/* USER CODE END 0 */
 /**
-  * Initializes the Global MSP.
+  * @brief TIM MSP Initialization
+  *        This function configures the hardware resources used:
+  *           - Peripheral's clock enable
+  *           - Peripheral's GPIO Configuration
+  *           - DMA configuration for transmission request by peripheral
+  * @param htim: TIM handle pointer
+  * @retval None
   */
-void HAL_MspInit(void)
+
+void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim)
 {
-  /* USER CODE BEGIN MspInit 0 */
+  GPIO_InitTypeDef   GPIO_InitStruct;
+  static DMA_HandleTypeDef  hdma_tim2_ch1;
 
-  /* USER CODE END MspInit 0 */
+  // ----------------------------------
+  // Enable peripherals and GPIO Clocks
+  // ----------------------------------
 
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
-  __HAL_RCC_PWR_CLK_ENABLE();
+  __HAL_RCC_TIM2_CLK_ENABLE();	// Enable TIM2 clock
+	__HAL_RCC_GPIOA_CLK_ENABLE();	// Enable TIM2 GPIO clock
+	__HAL_RCC_DMA1_CLK_ENABLE();	// Enable DMA1 clock
 
-  HAL_NVIC_SetPriorityGrouping(NVIC_PRIORITYGROUP_0);
+  // Configure TIM2_Channel 1 (PA0) as output, push-pull and alternate function mode
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  /* System interrupt init*/
+  // Configure DMA1 parameters
+  // Based on RM0383 STM32F411 Ref Manual (Table 27), TIM2_CH1 corresponds to DMA1 Channel 3 Stream 5
+  hdma_tim2_ch1.Instance = DMA1_Stream5;
+  hdma_tim2_ch1.Init.Channel = DMA_CHANNEL_3;
+  hdma_tim2_ch1.Init.Direction = DMA_MEMORY_TO_PERIPH;							// Memory to Peripheral mode
+  hdma_tim2_ch1.Init.PeriphInc = DMA_PINC_DISABLE;
+  hdma_tim2_ch1.Init.MemInc = DMA_MINC_ENABLE;
+  hdma_tim2_ch1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD ;
+  hdma_tim2_ch1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD ;
+  hdma_tim2_ch1.Init.Mode = DMA_CIRCULAR;														// Set in circular mode
+  hdma_tim2_ch1.Init.Priority = DMA_PRIORITY_HIGH;
+  hdma_tim2_ch1.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
+  hdma_tim2_ch1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
+  hdma_tim2_ch1.Init.MemBurst = DMA_MBURST_SINGLE;
+  hdma_tim2_ch1.Init.PeriphBurst = DMA_PBURST_SINGLE;
 
-  /* USER CODE BEGIN MspInit 1 */
+  // Enable Half-Transfer and Full-Transfer complete interrupts
+  __HAL_DMA_ENABLE_IT(&hdma_tim2_ch1, (DMA_IT_TC | DMA_IT_HT));
 
-  /* USER CODE END MspInit 1 */
-}
+  // Link hdma_tim2_ch1 to hdma[TIM_DMA_ID_CC3] (channel3)
+  __HAL_LINKDMA(htim, hdma[TIM_DMA_ID_CC1], hdma_tim2_ch1);
 
-/**
-* @brief UART MSP Initialization
-* This function configures the hardware resources used in this example
-* @param huart: UART handle pointer
-* @retval None
-*/
-void HAL_UART_MspInit(UART_HandleTypeDef* huart)
-{
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-  if(huart->Instance==USART2)
+  // Initialize TIM2 DMA handle
+  //HAL_DMA_Init(htim->hdma[TIM_DMA_ID_CC1]);
+  if (HAL_DMA_Init(&hdma_tim2_ch1) != HAL_OK)
   {
-  /* USER CODE BEGIN USART2_MspInit 0 */
-
-  /* USER CODE END USART2_MspInit 0 */
-    /* Peripheral clock enable */
-    __HAL_RCC_USART2_CLK_ENABLE();
-  
-    __HAL_RCC_GPIOA_CLK_ENABLE();
-    /**USART2 GPIO Configuration    
-    PA2     ------> USART2_TX
-    PA3     ------> USART2_RX 
-    */
-    GPIO_InitStruct.Pin = USART_TX_Pin|USART_RX_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
-    HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /* USER CODE BEGIN USART2_MspInit 1 */
-
-  /* USER CODE END USART2_MspInit 1 */
+    Error_Handler();
   }
 
+  // ##-2- Configure the NVIC for DMA #########################################
+  // NVIC configuration for DMA transfer complete interrupt
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 }
+
 
 /**
-* @brief UART MSP De-Initialization
-* This function freeze the hardware resources used in this example
-* @param huart: UART handle pointer
-* @retval None
-*/
-void HAL_UART_MspDeInit(UART_HandleTypeDef* huart)
-{
-  if(huart->Instance==USART2)
-  {
-  /* USER CODE BEGIN USART2_MspDeInit 0 */
+  * @}
+  */
 
-  /* USER CODE END USART2_MspDeInit 0 */
-    /* Peripheral clock disable */
-    __HAL_RCC_USART2_CLK_DISABLE();
-  
-    /**USART2 GPIO Configuration    
-    PA2     ------> USART2_TX
-    PA3     ------> USART2_RX 
-    */
-    HAL_GPIO_DeInit(GPIOA, USART_TX_Pin|USART_RX_Pin);
+/**
+  * @}
+  */
 
-  /* USER CODE BEGIN USART2_MspDeInit 1 */
-
-  /* USER CODE END USART2_MspDeInit 1 */
-  }
-
-}
-
-/* USER CODE BEGIN 1 */
-
-/* USER CODE END 1 */
+/**
+  * @}
+  */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

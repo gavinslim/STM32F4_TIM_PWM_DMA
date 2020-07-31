@@ -20,4 +20,5 @@
 "Src/syscalls.o"
 "Src/sysmem.o"
 "Src/system_stm32f4xx.o"
+"Src/w2812b.o"
 "Startup/startup_stm32f411retx.o"
