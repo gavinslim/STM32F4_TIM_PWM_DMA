@@ -28,6 +28,7 @@ GPIO_InitTypeDef GPIO_InitStruct = {0};
 TIM_HandleTypeDef htim2 = {0};
 TIM_OC_InitTypeDef sConfigOC = {0};
 
+DMA_InitTypeDef DMA_InitStructure = {0};
 DMA_HandleTypeDef hdma_tim2_ch1 = {0};
 
 /* Private define ------------------------------------------------------------*/
@@ -43,6 +44,10 @@ TIM_OC_InitTypeDef sConfig;
 
 /* Capture Compare buffer */
 uint32_t tmp_led_data[TMP_LED_SIZE];
+
+static uint8_t          is_reset_pulse;     /*!< Status if we are sending reset pulse or led data */
+static volatile uint8_t is_updating;        /*!< Is updating in progress? */
+static uint32_t         current_led;        /*!< Current LED number we are sending */
 
 /* Array of R, G, B colours */
 //static uint8_t leds_colors[LED_CFG_BYTES_PER_LED * LED_CFG_STRIP_CNT];
@@ -65,22 +70,25 @@ static uint8_t LED_set_color_all(uint8_t red, uint8_t green, uint8_t blue){
 	return 1;
 }
 
-static uint8_t led_reset_pulse(void){
+uint8_t led_is_update_finished(void) {
+    return !is_updating;                        /* Return updating flag status */
+}
+
+static uint8_t LED_reset_pulse(void){
 
 	// Stop PWM generation from DMA1
 	//HAL_TIM_PWM_Stop_DMA(&htim2, TIM_CHANNEL_1);
-	//HAL_TIM_PWM_Stop(&htim2, TIM_CHANNEL_1);
-
+	//HAL_TIM_Base_Stop_DMA(&htim2);
 
 	// Modify DMA config to Normal Mode
-  hdma_tim2_ch1.Init.Mode = DMA_NORMAL;
+  hdma_tim2_ch1.Init.Mode = DMA_CIRCULAR;
 
   // Set all data for tmp_led_data to 0
   memset(tmp_led_data, 0, sizeof(tmp_led_data));
 
   uint32_t index;
-  for (index = 0; index < LED_CFG_BITS_PER_LED; index++) {
-  	tmp_led_data[index] = (uint32_t)(((uint32_t) 50 * (uwTimerPeriod - 1)) / 100);
+  for (index = 0; index < (LED_CFG_BITS_PER_LED); index++) {
+  	tmp_led_data[index] = (uint32_t)(((uint32_t) 67 * (uwTimerPeriod - 1)) / 100);
   }
 
   // Initialize TIM2 DMA handle
@@ -88,14 +96,43 @@ static uint8_t led_reset_pulse(void){
     Error_Handler(DMA_ERROR);
   }
 
-	//__HAL_DMA_ENABLE(&hdma_tim2_ch1);
+  // Clear Half Transfer and Transfer Complete flags for DMA1 Stream5
+  __HAL_DMA_CLEAR_FLAG(&hdma_tim2_ch1, DMA_FLAG_HTIF1_5);
+  __HAL_DMA_CLEAR_FLAG(&hdma_tim2_ch1, DMA_FLAG_TCIF1_5);
+
+  // Disable Half Transfer Interrupt
+  __HAL_DMA_DISABLE_IT(&hdma_tim2_ch1, DMA_IT_HT);
+
+  // Enable Complete Transfer Interrupt
+  __HAL_DMA_ENABLE_IT(&hdma_tim2_ch1, DMA_IT_TC);
+
+  // Enable DMA Stream
+  //__HAL_DMA_ENABLE(&hdma_tim2_ch1);
+
   // Start PWM generation from DMA1
   // Set memory address = tmp_led_data, with data length = TMP_LED_SIZE
+
   if (HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, tmp_led_data, TMP_LED_SIZE) != HAL_OK){
     Error_Handler(EN_PWM_ERROR);
   }
 
   return 1;
+}
+
+
+uint8_t LED_update(uint8_t block){
+	if (is_updating) {
+		return 0;
+	}
+	is_updating = 1;
+
+	LED_reset_pulse();
+
+	if (block){
+		while(!led_is_update_finished());
+	}
+
+	return 1;
 }
 
 void blue(void){
@@ -160,12 +197,6 @@ void orange(void){
   }
 }
 
-void resetPulse(void){
-  uint32_t index;
-  for (index = 0; index < (LED_CFG_BITS_PER_LED); index++) {
-  	tmp_led_data[index] = (uint32_t)(((uint32_t) 0 * (uwTimerPeriod - 1)) / 100);
-  }
-}
 
 void reset_lightup(void){
   uint32_t index;
@@ -195,6 +226,19 @@ void reset_lightup(void){
   }
 }
 
+// DMA1 Stream 5 Global Interrupt
+void DMA1_Stream5_IRQHandler(void){
+	// Check for HT event
+	if (__HAL_DMA_GET_FLAG(&hdma_tim2_ch1, DMA_FLAG_HTIF1_5)){
+	  __HAL_DMA_CLEAR_FLAG(&hdma_tim2_ch1, DMA_FLAG_HTIF1_5);
+	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+	} else if (__HAL_DMA_GET_FLAG(&hdma_tim2_ch1, DMA_FLAG_TCIF1_5)) {
+	  __HAL_DMA_CLEAR_FLAG(&hdma_tim2_ch1, DMA_FLAG_TCIF1_5);
+	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+	}
+	// Check for TC event
+}
+
 /**
   * @brief  Main program.
   * @param  None
@@ -210,14 +254,15 @@ int main(void)
 
   // Compute the value of ARR regiter to generate signal frequency at 800kHz
   uwTimerPeriod = (uint32_t)((SystemCoreClock / 800000) - 1);
-
   //orange();
   uint32_t index;
   for (index = 0; index < LED_CFG_BITS_PER_LED; index++) {
   	tmp_led_data[index] = (uint32_t)(((uint32_t) 80 * (uwTimerPeriod - 1)) / 100);
   }
 
-  led_reset_pulse();
+  //LED_reset_pulse();
+  LED_set_color_all(0x01, 0x00, 0x00);	//Set color order of array. Ex: R0,G0,B0,R1,G1,B1
+  LED_update(1);
 
   //HAL_DMAEx_MultiBufferStart
   //__HAL_DMA_ENABLE(&htim2);
@@ -330,8 +375,6 @@ void SystemClock_Config(void)
 
 static void LED_Init(void)
 {
-
-
   /* ------------- */
   /*  GPIO Config  */
   /* ------------- */
@@ -366,6 +409,14 @@ static void LED_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
+  // Configure GPIO pin: PA2
+  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+
+  GPIO_InitStruct.Pin = GPIO_PIN_8;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
   /* -------------- */
   /* TIM2 Channel 1 */
   /* -------------- */
@@ -379,7 +430,11 @@ static void LED_Init(void)
   htim2.Init.CounterMode       = TIM_COUNTERMODE_UP;
   htim2.Init.Period            = 104;
   htim2.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
-  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_ENABLE;	//TIM_AUTORELOAD_PRELOAD_DISABLE
+
+  // TIM2 interrupt Init
+  HAL_NVIC_SetPriority(TIM2_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(TIM2_IRQn);
 
   // Note: HAL_TIM_PWM_Init() calls HAL_TIM_PWM_MspInit()
   if (HAL_TIM_PWM_Init(&htim2) != HAL_OK) {

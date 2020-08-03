@@ -15,7 +15,9 @@
 #define LED_CFG_BYTES_PER_LED 		3		// Each color is represented by 8 bits
 #define LED_CFG_BITS_PER_LED	(LED_CFG_STRIP_CNT * LED_CFG_BYTES_PER_LED * 8)	//8 bits = 1 byte
 
-#define TMP_LED_SIZE              74
+#define TOTAL_BITS_PER_LED        (LED_CFG_BYTES_PER_LED * 8)
+//#define TMP_LED_SIZE              124	//(24bits + 50bits)
+#define TMP_LED_SIZE              (50 + LED_CFG_STRIP_CNT * TOTAL_BITS_PER_LED)
 //uint32_t * resetPulse(uint32_t uwTimerPeriod);
 
 static uint8_t LED_colors[LED_CFG_BYTES_PER_LED * LED_CFG_STRIP_CNT];
