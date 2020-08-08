@@ -26,27 +26,13 @@
 #include "stm32f4xx_hal.h"
 
 /* Exported functions prototypes ---------------------------------------------*/
-//void Error_Handler(void);
 void Error_Handler(uint8_t ERROR);
 
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 
-// Definition for TIM2 Channel 1
-#define TIM2_CHANNEL1_GPIO_CLK_ENABLE    __HAL_RCC_GPIOA_CLK_ENABLE
-
-
-// Definition for TIM2's DMA
-#define TIM2_CC1_DMA_INST                DMA1_Stream5
-
-// Definition for ADCx's NVIC
-#define TIM2_DMA_IRQn                    DMA1_Stream5_IRQn
-#define TIM2_DMA_IRQHandler              DMA1_Stream5_IRQHandler
-
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-#define B1_Pin GPIO_PIN_13
-#define B1_GPIO_Port GPIOC
 #define USART_TX_Pin GPIO_PIN_2
 #define USART_TX_GPIO_Port GPIOA
 #define USART_RX_Pin GPIO_PIN_3
@@ -60,14 +46,7 @@ void Error_Handler(uint8_t ERROR);
 #define SWO_Pin GPIO_PIN_3
 #define SWO_GPIO_Port GPIOB
 
-/* Errors */
-#define SYSCONF_ERROR1 		0
-#define SYSCONF_ERROR2 		1
-#define EN_PWM_ERROR 			2
-#define TIM_CONFIG_ERROR 	3
-#define TIM_INIT_ERROR 		4
-#define GPIO_ERROR				5
-#define DMA_ERROR					6
+
 
 #endif /* __MAIN_H */
 
