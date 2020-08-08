@@ -3301,7 +3301,7 @@ LOAD c:/st/stm32cubeide_1.3.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.exte
                 0x00000000000003ca       0x22 c:/st/stm32cubeide_1.3.0/stm32cubeide/plugins/com.st.stm32cube.ide.mcu.externaltools.gnu-tools-for-stm32.7-2018-q2-update.win32_1.0.0.201904181610/tools/bin/../lib/gcc/arm-none-eabi/7.3.1/thumb/v7e-m/fpv4-sp/hard/crtn.o
 OUTPUT(exit_escape_box_stm32f4.elf elf32-littlearm)
 
-.debug_info     0x0000000000000000     0x94df
+.debug_info     0x0000000000000000     0x94e0
  .debug_info    0x0000000000000000      0x8d5 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o
  .debug_info    0x00000000000008d5      0xd98 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.o
  .debug_info    0x000000000000166d      0x960 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.o
@@ -3312,8 +3312,8 @@ OUTPUT(exit_escape_box_stm32f4.elf elf32-littlearm)
  .debug_info    0x0000000000006a85      0x663 Src/stm32f4xx_hal_msp.o
  .debug_info    0x00000000000070e8      0x6f9 Src/stm32f4xx_it.o
  .debug_info    0x00000000000077e1      0x57e Src/system_stm32f4xx.o
- .debug_info    0x0000000000007d5f     0x175e Src/w2812b.o
- .debug_info    0x00000000000094bd       0x22 Startup/startup_stm32f411retx.o
+ .debug_info    0x0000000000007d5f     0x175f Src/w2812b.o
+ .debug_info    0x00000000000094be       0x22 Startup/startup_stm32f411retx.o
 
 .debug_abbrev   0x0000000000000000     0x1626
  .debug_abbrev  0x0000000000000000      0x1f2 Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.o

@@ -8,6 +8,7 @@
 #include "w2812b.h"
 #include "string.h"
 
+// Rainbow
 void rainbow(size_t i){
 	volatile uint32_t timeout;
 	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
@@ -27,6 +28,7 @@ void rainbow(size_t i){
 	return;
 }
 
+// Pulse
 void pulse(void){
 	volatile uint32_t timeout;
 	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
