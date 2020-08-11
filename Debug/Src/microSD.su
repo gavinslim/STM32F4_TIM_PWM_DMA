@@ -1,0 +1,2 @@
+microSD.c:10:6:microSD_init	32	static
+microSD.c:32:6:check_microSD	8	static

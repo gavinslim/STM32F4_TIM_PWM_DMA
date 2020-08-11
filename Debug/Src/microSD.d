@@ -1,4 +1,4 @@
-Src/w2812b.o: ../Src/w2812b.c ../Inc/w2812b.h \
+Src/microSD.o: ../Src/microSD.c ../Inc/microSD.h \
  ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h \
  ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f411xe.h \
  ../Drivers/CMSIS/Include/core_cm4.h \
@@ -28,7 +28,7 @@ Src/w2812b.o: ../Src/w2812b.c ../Inc/w2812b.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
 
-../Inc/w2812b.h:
+../Inc/microSD.h:
 
 ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h:
 

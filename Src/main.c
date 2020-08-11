@@ -21,6 +21,8 @@
 #include "main.h"
 #include "string.h"
 #include "w2812b.h"
+#include <stdio.h> //UART
+#include "microSD.h"
 
 /* Private typedef -----------------------------------------------------------*/
 //GPIO_InitTypeDef GPIO_InitStruct;
@@ -30,15 +32,23 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
+char buffer[10];
 
 /* Timer handler declaration */
 
 /* Timer Output Compare Configuration Structure declaration */
 TIM_OC_InitTypeDef sConfig;
+UART_HandleTypeDef huart2;
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_USART2_UART_Init(void);
+
+void transmit_uart(char *string){
+	uint8_t len = strlen(string);
+	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 200);
+}
 
 /**
   * @brief  Main program.
@@ -47,18 +57,34 @@ static void MX_GPIO_Init(void);
   */
 int main(void)
 {
-  HAL_Init();
+  /* MCU Configuration--------------------------------------------------------*/
+
+  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
+	HAL_Init();
+
+  /* Configure the system clock */
   SystemClock_Config();		// Configure system clock to 180MHz
+
+  /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_USART2_UART_Init();
 
   // WS2812B Setup
   LED_Init();
   LED_set_color_all(0x00, 0x00, 0x00);	//Set color order of array. Ex: R0,G0,B0,R1,G1,B1
   LED_update(1);
 
+  //char buffer[10];
+  //int frequency = 100;
+  //HAL_UART_Transmit(&huart2, (uint8_t*)buffer, sprintf(buffer, "%d ", frequency), HAL_MAX_DELAY);
+	transmit_uart("1");
+
   /* Infinite loop */
   while (1) {
+  	check_microSD();
+  	//HAL_GPIO_TogglePin(LD2_GPIO_Port, LD2_Pin);
   	pulse();
+  	//transmit_uart("Hello!\n");
   }
 }
 
@@ -154,7 +180,38 @@ static void MX_GPIO_Init(void){
   HAL_GPIO_Init(LD2_GPIO_Port, &GPIO_InitStruct);
 }
 
+/**
+  * @brief USART2 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART2_UART_Init(void)
+{
 
+  /* USER CODE BEGIN USART2_Init 0 */
+
+  /* USER CODE END USART2_Init 0 */
+
+  /* USER CODE BEGIN USART2_Init 1 */
+
+  /* USER CODE END USART2_Init 1 */
+  huart2.Instance = USART2;
+  huart2.Init.BaudRate = 115200;
+  huart2.Init.WordLength = UART_WORDLENGTH_8B;
+  huart2.Init.StopBits = UART_STOPBITS_1;
+  huart2.Init.Parity = UART_PARITY_NONE;
+  huart2.Init.Mode = UART_MODE_TX_RX;
+  huart2.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart2.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart2) != HAL_OK)
+  {
+    Error_Handler(UART_ERROR);
+  }
+  /* USER CODE BEGIN USART2_Init 2 */
+
+  /* USER CODE END USART2_Init 2 */
+
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -167,26 +224,29 @@ void Error_Handler(uint8_t ERROR)
     /* Turn LED2 on */
   	switch(ERROR){
   	case SYSCONF_ERROR1:
-  		//HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
   		break;
   	case SYSCONF_ERROR2:
-  		//HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
   		break;
   	case TIM_INIT_ERROR:
-  	  //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
   	  break;
   	case EN_PWM_ERROR:
   	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
   	  break;
   	case TIM_CONFIG_ERROR:
-  	  //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
   	  break;
   	case DMA_ERROR:
-  	  //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
   	  break;
   	case GPIO_ERROR:
-  	  //HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
   	  break;
+  	case UART_ERROR:
+  		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+  		break;
   	default:
   	  HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_RESET);
   	}
