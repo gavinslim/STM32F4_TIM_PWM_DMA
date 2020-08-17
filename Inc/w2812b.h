@@ -84,5 +84,6 @@ void led_update_sequence(uint8_t event);
 void DMA1_Stream5_IRQHandler(void);
 void rainbow(size_t i);
 void pulse(void);
+void pingpong(void);
 
 #endif /* W2812B_H_ */

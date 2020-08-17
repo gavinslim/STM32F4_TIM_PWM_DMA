@@ -32,7 +32,7 @@ void rainbow(size_t i){
 void pulse(void){
 	volatile uint32_t timeout;
 	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
-		set_LED_colors((i + 0) % LED_CFG_STRIP_CNT, 0x1F, 0, 0x1F);
+		set_LED_colors((i + 0) % LED_CFG_STRIP_CNT, 0x1F, 0x0, 0x1F);
 		//set_LED_colors((i + 1) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
 		//set_LED_colors((i + 2) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
 		//set_LED_colors((i + 3) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
@@ -143,7 +143,7 @@ uint8_t LED_reset_pulse(uint8_t rst){
   if (HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, (uint32_t*)tmp_led_data, 2 * LED_CFG_RAW_BITS_PER_LED) != HAL_OK){
     Error_Handler(EN_PWM_ERROR);
   }
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
   return 1;
 }
 
@@ -181,7 +181,7 @@ void led_update_sequence(uint8_t event) {
 	if (rst_flag == RESET_AT_END){
 
 		HAL_TIM_PWM_Stop_DMA(&htim2, TIM_CHANNEL_1);	// Stop DMA
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+		//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 
 		update_flag = NOT_UPDATING;										// No longer updating
 		return;
@@ -192,7 +192,7 @@ void led_update_sequence(uint8_t event) {
 		if (!event) { return; }		// If HT event, return and wait until TC event
 
 		HAL_TIM_PWM_Stop_DMA(&htim2, TIM_CHANNEL_1);	// Disable PWM generation to update LED sequence
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+		//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 
 		rst_flag = NOT_RESETTING;											// No longer resetting
 
@@ -238,7 +238,7 @@ void led_update_sequence(uint8_t event) {
 		  if (HAL_TIM_PWM_Start_DMA(&htim2, TIM_CHANNEL_1, (uint32_t*)tmp_led_data, 2 * LED_CFG_RAW_BITS_PER_LED) != HAL_OK){
 		    Error_Handler(EN_PWM_ERROR);
 		  }
-		  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
+		  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_SET);
 		}
 
 	// When all LEDs have been lit up, wait for all data to be transmitted before modifying DMA
@@ -246,7 +246,7 @@ void led_update_sequence(uint8_t event) {
 	// TC && !(LED_CFG_STRIP_CNT & 0x01): Transfer-Complete event occured and odd-numbered LED
 	} else if ((!event && (LED_CFG_STRIP_CNT & 0x01)) || (event && !(LED_CFG_STRIP_CNT & 0x01))) {
 		HAL_TIM_PWM_Stop_DMA(&htim2, TIM_CHANNEL_1);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+		//HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
 		LED_reset_pulse(RESET_AT_END);
 	}
 
@@ -258,12 +258,12 @@ void DMA1_Stream5_IRQHandler(void){
 	// Check for Half-Transfer (HT) event
 	if (__HAL_DMA_GET_FLAG(&hdma_tim2_ch1, DMA_FLAG_HTIF1_5)){
 	  __HAL_DMA_CLEAR_FLAG(&hdma_tim2_ch1, DMA_FLAG_HTIF1_5);
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
+	  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_SET);
 	  led_update_sequence(HT_EVENT);
 	// Check for Transfer-Complete (TC) event
 	} else if (__HAL_DMA_GET_FLAG(&hdma_tim2_ch1, DMA_FLAG_TCIF1_5)) {
 	  __HAL_DMA_CLEAR_FLAG(&hdma_tim2_ch1, DMA_FLAG_TCIF1_5);
-	  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+	  //HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
 	  led_update_sequence(TC_EVENT);
 	}
 }
@@ -291,9 +291,9 @@ void LED_Init(void)
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
   // Configure GPIO pin: PB0, PB10, debugging for is_updating flag
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
+  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
   HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO_PIN_0;
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);

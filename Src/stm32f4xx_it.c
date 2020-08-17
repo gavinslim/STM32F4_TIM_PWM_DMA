@@ -52,6 +52,12 @@
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
 extern    TIM_HandleTypeDef    TimHandle;
+
+// SPI microSD
+extern uint16_t Timer1, Timer2;
+//extern DMA_HandleTypeDef hdma_spi1_tx;
+//extern SPI_HandleTypeDef hspi1;
+
 /* Private function prototypes -----------------------------------------------*/
 /* Private functions ---------------------------------------------------------*/
 
@@ -154,7 +160,20 @@ void PendSV_Handler(void)
   */
 void SysTick_Handler(void)
 {
+	/* USER CODE 1 */
+	// For SPI microSD
+	if(Timer1 > 0)
+		Timer1--;
+
+	if(Timer2 > 0)
+		Timer2--;
+
+	/* USER CODE 1 END */
   HAL_IncTick();
+
+  /* USER CODE 2 */
+  HAL_SYSTICK_IRQHandler();
+  /* USER CODE 2 END */
 }
 
 
