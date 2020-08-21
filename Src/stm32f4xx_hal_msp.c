@@ -18,6 +18,12 @@
   ******************************************************************************
   */
 
+/*
+ * This file defines all initialization functions to configure the IP instances
+ * according to the user configuration (pin allocation, enabling of block, use
+ * of DMA and interrupts
+ */
+
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
@@ -39,6 +45,8 @@ extern DMA_HandleTypeDef hdma_tim2_ch1;
   * @param htim: TIM handle pointer
   * @retval None
   */
+
+//Msp = MCU Support Package
 
 void HAL_TIM_PWM_MspInit(TIM_HandleTypeDef *htim)
 {

@@ -24,7 +24,6 @@
 #include <stdio.h> //UART
 #include "microSD.h"
 
-
 /* Private typedef -----------------------------------------------------------*/
 //GPIO_InitTypeDef GPIO_InitStruct;
 
@@ -33,7 +32,7 @@
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
-char buffer[100];
+//char buffer[100];
 
 /* Timer handler declaration */
 
@@ -51,12 +50,14 @@ void transmit_uart(char *string){
 	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 200);
 }
 
+/*
 FATFS fs;
 FATFS *pfs;
 FIL fil;
 FRESULT fres;
 DWORD fre_clust;
 uint32_t totalSpace, freeSpace;
+*/
 
 /**
   * @brief  Main program.
@@ -86,145 +87,99 @@ int main(void)
   LED_set_color_all(0x00, 0x00, 0x00);	//Set color order of array. Ex: R0,G0,B0,R1,G1,B1
   LED_update(1);
 
+  // ------------------------------ //
+  //       microSD Card Init        //
+  // -------------------------------//
+
   /* Wait for microSD to initialize */
   HAL_Delay(500);
 
   /* Check if microSD is connected physically */
 	while (!check_microSD_conn()){
   	transmit_uart("MicroSD card not detected!\r\n");
-  	HAL_Delay(1000);
+  	pulse_red();
+  	//HAL_Delay(1000);
 	}
 	transmit_uart("MicroSD card detected!\r\n");
 
 	/* Waiting for the Micro SD module to initialize */
 	HAL_Delay(500);
 
-	fres = f_mount(&fs, "", 0);
-	if (fres == FR_OK) {
-		transmit_uart("Micro SD card is mounted successfully!\r\n");
-	} else if (fres != FR_OK) {
-		transmit_uart("Micro SD card's mount error!\r\n");
-	}
-
-	// FA_OPEN_APPEND opens file if it exists and if not then creates it,
-	// the pointer is set at the end of the file for appending FA_OPEN_APPEND | FA_WRITE | FA_READ
-  /*
-	if (f_open(&fil, "log-file.txt", FA_OPEN_APPEND | FA_WRITE | FA_READ) != FR_OK) {
-    Error_Handler(OPEN_ERROR);
-  }
-	*/
-
-	/*
-	fres = f_open(&fil, "log-file.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE);
-	if (fres == FR_OK) {
-		transmit_uart("File opened for reading and checking the free space.\r\n");
-	} else if (fres != FR_OK) {
-		transmit_uart("File was not opened for reading and checking the free space!\r\n");
-	}
-	*/
-	if(f_open(&fil, "first.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE) != FR_OK) {
-		transmit_uart("FAIL - File not opened\r\n");
-		Error_Handler(OPEN_ERROR);
+	if (mount_sd()){
+		transmit_uart("PASS - MicroSD card is mounted successfully!\r\n");
 	} else {
-		transmit_uart("PASS - File successfully opened\r\n");
+		transmit_uart("FAIL - MicroSD card's mount error!\r\n");
 	}
 
+	char temp[50] = "Gavin.txt";
 
-	fres = f_getfree("", &fre_clust, &pfs);
-	totalSpace = (uint32_t) ((pfs->n_fatent - 2) * pfs->csize * 0.5);
-	freeSpace = (uint32_t) (fre_clust * pfs->csize * 0.5);
+	// Open file
+	if (open_file(temp)){
+		transmit_uart("PASS - File successfully opened\r\n");
+	} else {
+		transmit_uart("FAIL - File not opened\r\n");
+	}
 
-	char mSz[12];
-	sprintf(mSz, "%lu", freeSpace);
+	// Calculate free space
+	uint32_t fSpace;
+	fSpace = get_freespace();
+	if (fSpace > 0){
+		char mSz[12];
+		sprintf(mSz, "%lu", fSpace);
 
-	if (fres == FR_OK) {
 		transmit_uart("The free space is: ");
 		transmit_uart(mSz);
-		transmit_uart("\r\n");
-	} else if (fres != FR_OK) {
+		transmit_uart("kb\r\n");
+	} else {
 		transmit_uart("The free space could not be determined!\r\n");
 	}
 
-	for (uint8_t i = 0; i < 10; i++) {
-		f_puts("This text is written in the file.\r\n", &fil);
-	}
-
-	fres = f_close(&fil);
-	if (fres == FR_OK) {
-		transmit_uart("The file is closed.\r\n");
-	} else if (fres != FR_OK) {
-		transmit_uart("The file was not closed.\r\n");
-	}
-
-	/* Open file to read */
-	/*
-	fres = f_open(&fil, "log-file.txt", FA_READ);
-	if (fres == FR_OK) {
-		transmit_uart("File opened for reading.\r\n");
-	} else if (fres != FR_OK) {
-		transmit_uart("File was not opened for reading!\r\n");
-	}
-	*/
-	if(f_open(&fil, "first.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE) != FR_OK) {
-		transmit_uart("FAIL - File not opened\r\n");
-		Error_Handler(OPEN_ERROR);
+	// Write to file
+	if (write_file()){
+		transmit_uart("Writing complete.\r\n");
 	} else {
-		transmit_uart("PASS - File successfully opened for reading\r\n");
+		transmit_uart("Writing not completed.\r\n");
 	}
 
-	transmit_uart("--------------------------------------\n\r");
-	while (f_gets(buffer, sizeof(buffer), &fil)) {
-		char mRd[100];
-		sprintf(mRd, "%s", buffer);
-		transmit_uart(mRd);
-		transmit_uart("\r");
-	}
-	transmit_uart("--------------------------------------\n\r");
-
-	/* Close file */
-	fres = f_close(&fil);
-	if (fres == FR_OK) {
+	// Close file
+	if (close_file()){
 		transmit_uart("The file is closed.\r\n");
-	} else if (fres != FR_OK) {
+	} else {
 		transmit_uart("The file was not closed.\r\n");
 	}
 
-	f_mount(NULL, "", 1);
-	if (fres == FR_OK) {
+	// Open file
+	if (open_file(temp)){
+		transmit_uart("PASS - File successfully opened\r\n");
+	} else {
+		transmit_uart("FAIL - File not opened\r\n");
+	}
+
+	// Close file
+	if (close_file()){
+		transmit_uart("The file is closed.\r\n");
+	} else {
+		transmit_uart("The file was not closed.\r\n");
+	}
+
+	// Unmount microSD card
+	if (unmount()){
 		transmit_uart("The Micro SD card is unmounted!\r\n");
-	} else if (fres != FR_OK) {
+	} else {
 		transmit_uart("The Micro SD was not unmounted!");
 	}
 
-
-	/*
-	// Check if microSD is mounted
-	if (check_microSD_mount()) {
-		transmit_uart("MicroSD card is mounted successfully!\r\n");
-	} else {
-		transmit_uart("MicroSD card's mount error!\r\n");
-	}
-
-	if (open_file()) {
-		transmit_uart("File opened for reading and checking the free space.\r\n");
-	} else {
-		transmit_uart("File was not opened for reading and checking the free space!\r\n");
-	}
-	*/
-
-  /* Infinite loop */
+	// ------------- //
+	// Infinite Loop //
+	// ------------- //
   while (1) {
-  	// Check if microSD card is detected
   	if (check_microSD_conn()){
-
-  		// Send pulse lighting to W2812B LED Strip
-  		pulse();
+  		pulse();	// Send pulse lighting to W2812B LED Strip
   	} else {
-
-  		// Loop until microSD card is detected
   		while (!(check_microSD_conn())){
   			transmit_uart("MicroSD card not detected!\r\n");
-  			HAL_Delay(1000);
+  			pulse_red();
+  			//HAL_Delay(1000);
   		}
 			transmit_uart("MicroSD card detected!\r\n");
   	}

@@ -31,7 +31,7 @@ void Error_Handler(uint8_t ERROR);
 /* Exported types ------------------------------------------------------------*/
 /* Exported constants --------------------------------------------------------*/
 #define UART_ERROR 7
-#define OPEN_ERROR 8
+//#define OPEN_ERROR 8
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
 #define USART_TX_Pin GPIO_PIN_2

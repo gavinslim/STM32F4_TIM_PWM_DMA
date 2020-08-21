@@ -50,6 +50,27 @@ void pulse(void){
 	return;
 }
 
+void pulse_red(void){
+	volatile uint32_t timeout;
+	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
+		set_LED_colors((i + 0) % LED_CFG_STRIP_CNT, 0x1F, 0x0, 0x0);
+		//set_LED_colors((i + 1) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
+		//set_LED_colors((i + 2) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 3) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 4) % LED_CFG_STRIP_CNT, 0, 0x7F, 0);
+		//set_LED_colors((i + 5) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 6) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 7) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
+		//set_LED_colors((i + 8) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
+
+		LED_update(1);
+		LED_set_color_all(0, 0, 0);
+		timeout = 0x7FFFF;
+		while (--timeout) {}
+	}
+	return;
+}
+
 void pingpong(void){
 	volatile uint32_t timeout;
 	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
