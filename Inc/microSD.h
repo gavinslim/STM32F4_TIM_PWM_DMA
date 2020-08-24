@@ -25,15 +25,21 @@
 void Error_Handler(uint8_t ERROR);
 
 void microSD_init (void);
+void transmit_uart_SD(char *string);
+
 uint8_t check_microSD_conn (void);
 uint8_t check_microSD_mount (void);
 
-uint8_t mount_sd(void);
-uint8_t open_file(char* file_name);
-uint32_t get_freespace(void);
-uint8_t write_file(void);
-uint8_t close_file(void);
-uint8_t read_file(char* outStr);
-uint8_t unmount(void);
+void mount_sd(void);
+void open_file(char* file_name);
+void get_freespace(void);
+void write_file(void);
+void close_file(void);
+void read_file(void);
+void unmount(void);
+
+// Finding files in microSD card
+void find_txt_file(void);
+void find_mp3_file(void);
 
 #endif /* MICROSD_H_ */

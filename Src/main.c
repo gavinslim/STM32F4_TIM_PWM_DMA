@@ -50,6 +50,7 @@ void transmit_uart(char *string){
 	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 200);
 }
 
+
 /*
 FATFS fs;
 FATFS *pfs;
@@ -95,79 +96,35 @@ int main(void)
   HAL_Delay(500);
 
   /* Check if microSD is connected physically */
+	transmit_uart("-----------------------\r\n");
 	while (!check_microSD_conn()){
   	transmit_uart("MicroSD card not detected!\r\n");
   	pulse_red();
   	//HAL_Delay(1000);
 	}
 	transmit_uart("MicroSD card detected!\r\n");
+	transmit_uart("-----------------------\r\n");
 
 	/* Waiting for the Micro SD module to initialize */
 	HAL_Delay(500);
 
-	if (mount_sd()){
-		transmit_uart("PASS - MicroSD card is mounted successfully!\r\n");
-	} else {
-		transmit_uart("FAIL - MicroSD card's mount error!\r\n");
-	}
+	char file_name[50] = "Crystal.txt";
 
-	char temp[50] = "Gavin.txt";
+	mount_sd();
+	open_file(file_name);
 
-	// Open file
-	if (open_file(temp)){
-		transmit_uart("PASS - File successfully opened\r\n");
-	} else {
-		transmit_uart("FAIL - File not opened\r\n");
-	}
+	get_freespace();
 
-	// Calculate free space
-	uint32_t fSpace;
-	fSpace = get_freespace();
-	if (fSpace > 0){
-		char mSz[12];
-		sprintf(mSz, "%lu", fSpace);
+	write_file();
+	close_file();
+	open_file(file_name);
+	read_file();
+	close_file();
 
-		transmit_uart("The free space is: ");
-		transmit_uart(mSz);
-		transmit_uart("kb\r\n");
-	} else {
-		transmit_uart("The free space could not be determined!\r\n");
-	}
+	find_mp3_file();
+	find_txt_file();
 
-	// Write to file
-	if (write_file()){
-		transmit_uart("Writing complete.\r\n");
-	} else {
-		transmit_uart("Writing not completed.\r\n");
-	}
-
-	// Close file
-	if (close_file()){
-		transmit_uart("The file is closed.\r\n");
-	} else {
-		transmit_uart("The file was not closed.\r\n");
-	}
-
-	// Open file
-	if (open_file(temp)){
-		transmit_uart("PASS - File successfully opened\r\n");
-	} else {
-		transmit_uart("FAIL - File not opened\r\n");
-	}
-
-	// Close file
-	if (close_file()){
-		transmit_uart("The file is closed.\r\n");
-	} else {
-		transmit_uart("The file was not closed.\r\n");
-	}
-
-	// Unmount microSD card
-	if (unmount()){
-		transmit_uart("The Micro SD card is unmounted!\r\n");
-	} else {
-		transmit_uart("The Micro SD was not unmounted!");
-	}
+	unmount();
 
 	// ------------- //
 	// Infinite Loop //

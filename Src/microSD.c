@@ -25,16 +25,6 @@ void microSD_init (void){
 
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
-  // Configure GPIO pin : PC2_Pin
-	/*
-  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_2, GPIO_PIN_RESET);
-  GPIO_InitStruct.Pin = GPIO_PIN_2;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-	*/
-
   // Configure GPIO pin : PH1_Pin
   HAL_GPIO_WritePin(GPIOH, GPIO_PIN_1, GPIO_PIN_RESET);
   GPIO_InitStruct.Pin = GPIO_PIN_1;
@@ -70,6 +60,11 @@ void microSD_init (void){
   }
 }
 
+void transmit_uart_SD(char *string){
+	uint8_t len = strlen(string);
+	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 200);
+}
+
 uint8_t check_microSD_conn (void) {
 	if(!(HAL_GPIO_ReadPin(GPIOH, GPIO_PIN_1))){
 		return 0;
@@ -77,72 +72,153 @@ uint8_t check_microSD_conn (void) {
 	return 1;
 }
 
-uint8_t mount_sd(void){
+void mount_sd(void){
 	fres = f_mount(&fs, "", 0);
 	if (fres == FR_OK) {
-		return 1;
+		transmit_uart_SD("PASS - MicroSD card is mounted successfully!\r\n");
 	} else {
-		return 0;
+		transmit_uart_SD("FAIL - MicroSD card's mount error!\r\n");
 	}
+	return;
 }
 
-uint8_t open_file(char* file_name){
+void open_file(char* file_name){
 	if(f_open(&fil, file_name, FA_OPEN_ALWAYS | FA_READ | FA_WRITE) != FR_OK) {
-		return 0;
+		transmit_uart_SD("FAIL - File not opened.\r\n");
 	} else {
-		return 1;
+		transmit_uart_SD("PASS - File successfully opened.\r\n");
 	}
+	return;
 }
 
-uint32_t get_freespace(void){
+void get_freespace(void){
 	fres = f_getfree("", &fre_clust, &pfs);
 	totalSpace = (uint32_t) ((pfs->n_fatent - 2) * pfs->csize * 0.5);
 	freeSpace = (uint32_t) (fre_clust * pfs->csize * 0.5);
 
+	char mSz[12];
+	sprintf(mSz, "%lu", freeSpace);
+
 	if (fres == FR_OK) {
-		return freeSpace;
+		transmit_uart_SD("PASS - Free space (kb): ");
+		transmit_uart_SD(mSz);
+		transmit_uart_SD("\r\n");
 	} else if (fres != FR_OK) {
-		return 0;
+		transmit_uart_SD("FAIL - Free space failed to be determined.\r\n");
 	}
-	return 0;
+	return;
 }
 
-uint8_t write_file(void){
+void write_file(void){
 	for (uint8_t i = 0; i < 10; i++) {
-		f_puts("This text is written in the file.\r\n", &fil);
+		f_puts("This text is written in the file.\n", &fil);
 	}
-	return 1;
+	transmit_uart_SD("PASS - Writing complete.\r\n");
+	return;
 }
 
-uint8_t close_file(void){
+void close_file(void){
 	fres = f_close(&fil);
 	if (fres == FR_OK) {
-		return 1;
+		transmit_uart_SD("PASS - File successfully closed.\r\n");
 	} else if (fres != FR_OK) {
-		return 0;
+		transmit_uart_SD("FAIL - File failed to close.\r\n");
 	}
-	return 0;
+	return;
 }
 
-uint8_t read_file(char* outStr){
+void read_file(void){
+	transmit_uart_SD("Reading File...\r\n");
+	transmit_uart_SD("Contents of File:\r\n");
+	transmit_uart_SD("-----------------\r\n");
+
 	while (f_gets(buffer, sizeof(buffer), &fil)) {
 		char mRd[100];
 		sprintf(mRd, "%s", buffer);
 
-		for (int i = 0; i < 100; ++i){
-			outStr[i] = mRd[i];
-		}
+		transmit_uart_SD(mRd);
+		transmit_uart_SD("\r\n");
 	}
-	return 1;
+
+	transmit_uart_SD("-----------------\r\n");
+	return;
 }
 
-uint8_t unmount(void){
+void unmount(void){
 	f_mount(NULL, "", 1);
 	if (fres == FR_OK) {
-		return 1;
+		transmit_uart_SD("PASS - MicroSD successfully unmounted.\r\n");
 	} else if (fres != FR_OK) {
-		return 0;
+		transmit_uart_SD("FAIL - MicroSD failed to unmount.\r\n");
 	}
+	return;
+}
+
+/* Search a directory for objects and display it */
+void find_txt_file (void)
+{
+    FRESULT fr;     /* Return value */
+    DIR dj;         /* Directory object */
+    FILINFO fno;    /* File information */
+
+    uint8_t idx = 1;
+    char index[5];
+
+    transmit_uart_SD("\r\n");
+    transmit_uart_SD("Text Files Found:\n\r");
+    transmit_uart_SD("-----------------\n\r");
+
+    //fr = f_findfirst(&dj, &fno, "", "dsc*.mp3");  /* Start to search for photo files */
+    fr = f_findfirst(&dj, &fno, "", "???*.txt");
+
+    while (fr == FR_OK && fno.fname[0]) {         /* Repeat while an item is found */
+      sprintf(index, "%u", idx);
+      transmit_uart_SD("File ");
+    	transmit_uart_SD(index);
+    	transmit_uart_SD(": ");
+    	transmit_uart_SD(fno.fname);							/* Print the object name */
+    	transmit_uart_SD("\r\n");
+
+    	fr = f_findnext(&dj, &fno);               /* Search for next item */
+
+    	idx++;
+    }
+
+    transmit_uart_SD("-----------------\n\r");
+    f_closedir(&dj);
+}
+
+/* Search a directory for objects and display it */
+void find_mp3_file (void)
+{
+    FRESULT fr;     /* Return value */
+    DIR dj;         /* Directory object */
+    FILINFO fno;    /* File information */
+
+    uint8_t idx = 1;
+    char index[5];
+
+    transmit_uart_SD("\r\n");
+    transmit_uart_SD("MP3 Files Found:\n\r");
+    transmit_uart_SD("----------------\n\r");
+    //fr = f_findfirst(&dj, &fno, "", "dsc*.mp3");  /* Start to search for photo files */
+    fr = f_findfirst(&dj, &fno, "", "???*.mp3");
+
+    while (fr == FR_OK && fno.fname[0]) {         /* Repeat while an item is found */
+
+      sprintf(index, "%u", idx);
+      transmit_uart_SD("File ");
+    	transmit_uart_SD(index);
+    	transmit_uart_SD(": ");
+    	transmit_uart_SD(fno.fname);							/* Print the object name */
+    	transmit_uart_SD("\r\n");
+
+    	fr = f_findnext(&dj, &fno);               /* Search for next item */
+
+    	idx++;
+    }
+    transmit_uart_SD("----------------\n\r");
+    f_closedir(&dj);
 }
 
 /*
