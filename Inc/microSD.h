@@ -22,6 +22,13 @@
 #define SD_CS_Pin 			GPIO_PIN_12
 #define SD_CS_GPIO_Port GPIOB
 
+// File type
+typedef enum {
+	MP3,
+	WAV,
+	TXT
+} filetype;
+
 void Error_Handler(uint8_t ERROR);
 
 void microSD_init (void);
@@ -41,5 +48,6 @@ void unmount(void);
 // Finding files in microSD card
 void find_txt_file(void);
 void find_mp3_file(void);
+void find_file (filetype f_type);
 
 #endif /* MICROSD_H_ */

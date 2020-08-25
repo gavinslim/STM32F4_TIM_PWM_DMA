@@ -2,7 +2,8 @@
  * microSD.c
  *
  *  Created on: Aug 7, 2020
- *      Author: Gavin
+ *  Author:     Gavin
+ *  Purpose:    Functions for controlling microSD card
  */
 
 #include "microSD.h"
@@ -75,7 +76,7 @@ uint8_t check_microSD_conn (void) {
 void mount_sd(void){
 	fres = f_mount(&fs, "", 0);
 	if (fres == FR_OK) {
-		transmit_uart_SD("PASS - MicroSD card is mounted successfully!\r\n");
+		transmit_uart_SD("PASS - MicroSD card mounted successfully!\r\n");
 	} else {
 		transmit_uart_SD("FAIL - MicroSD card's mount error!\r\n");
 	}
@@ -154,8 +155,7 @@ void unmount(void){
 	return;
 }
 
-/* Search a directory for objects and display it */
-void find_txt_file (void)
+void find_file (filetype f_type)
 {
     FRESULT fr;     /* Return value */
     DIR dj;         /* Directory object */
@@ -163,55 +163,59 @@ void find_txt_file (void)
 
     uint8_t idx = 1;
     char index[5];
+    unsigned long file_size_kB;
+    char file_size[10];
 
-    transmit_uart_SD("\r\n");
-    transmit_uart_SD("Text Files Found:\n\r");
-    transmit_uart_SD("-----------------\n\r");
+    char file_fmt_name[5];
+    char file_fmt[10];
 
-    //fr = f_findfirst(&dj, &fno, "", "dsc*.mp3");  /* Start to search for photo files */
-    fr = f_findfirst(&dj, &fno, "", "???*.txt");
-
-    while (fr == FR_OK && fno.fname[0]) {         /* Repeat while an item is found */
-      sprintf(index, "%u", idx);
-      transmit_uart_SD("File ");
-    	transmit_uart_SD(index);
-    	transmit_uart_SD(": ");
-    	transmit_uart_SD(fno.fname);							/* Print the object name */
-    	transmit_uart_SD("\r\n");
-
-    	fr = f_findnext(&dj, &fno);               /* Search for next item */
-
-    	idx++;
+    switch(f_type) {
+    case MP3:
+    	strcpy(file_fmt_name, "MP3");
+    	strcpy(file_fmt, "???*.mp3");
+    	break;
+    case WAV:
+    	strcpy(file_fmt_name, "WAV");
+    	strcpy(file_fmt, "???*.wav");
+    	break;
+    case TXT:
+    	strcpy(file_fmt_name, "TXT");
+    	strcpy(file_fmt, "???*.txt");
+    	break;
+    default:
+    	transmit_uart_SD("FAIL - Invalid file type, find_file().");
+    	return;
     }
 
-    transmit_uart_SD("-----------------\n\r");
-    f_closedir(&dj);
-}
-
-/* Search a directory for objects and display it */
-void find_mp3_file (void)
-{
-    FRESULT fr;     /* Return value */
-    DIR dj;         /* Directory object */
-    FILINFO fno;    /* File information */
-
-    uint8_t idx = 1;
-    char index[5];
-
     transmit_uart_SD("\r\n");
-    transmit_uart_SD("MP3 Files Found:\n\r");
+    transmit_uart_SD(file_fmt_name);
+    transmit_uart_SD(" Files Found:\n\r");
     transmit_uart_SD("----------------\n\r");
     //fr = f_findfirst(&dj, &fno, "", "dsc*.mp3");  /* Start to search for photo files */
-    fr = f_findfirst(&dj, &fno, "", "???*.mp3");
+    fr = f_findfirst(&dj, &fno, "", file_fmt);
 
     while (fr == FR_OK && fno.fname[0]) {         /* Repeat while an item is found */
 
+    	// Determine file number
       sprintf(index, "%u", idx);
+
+      // Determine file size in Kilobytes
+      file_size_kB = fno.fsize / 1000;
+      sprintf(file_size, "%lu", file_size_kB);
+
+      // Print out file index
       transmit_uart_SD("File ");
     	transmit_uart_SD(index);
-    	transmit_uart_SD(": ");
+    	transmit_uart_SD(" - ");
+
+    	// Print out file name
+    	transmit_uart_SD("Name: ");
     	transmit_uart_SD(fno.fname);							/* Print the object name */
-    	transmit_uart_SD("\r\n");
+
+    	// Print out file size
+    	transmit_uart_SD(" | Size: ");
+    	transmit_uart_SD(file_size);
+    	transmit_uart_SD(" kB\r\n");
 
     	fr = f_findnext(&dj, &fno);               /* Search for next item */
 

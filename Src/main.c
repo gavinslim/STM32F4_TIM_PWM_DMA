@@ -105,24 +105,21 @@ int main(void)
 	transmit_uart("MicroSD card detected!\r\n");
 	transmit_uart("-----------------------\r\n");
 
-	/* Waiting for the Micro SD module to initialize */
-	HAL_Delay(500);
-
-	char file_name[50] = "Crystal.txt";
-
 	mount_sd();
-	open_file(file_name);
 
-	get_freespace();
+	//char file_name[50] = "Crystal.txt";
+	//open_file(file_name);
+	//get_freespace();
+	//write_file();
+	//close_file();
 
-	write_file();
-	close_file();
-	open_file(file_name);
-	read_file();
-	close_file();
+	//open_file(file_name);
+	//read_file();
+	//close_file();
 
-	find_mp3_file();
-	find_txt_file();
+	find_file(TXT);
+	find_file(MP3);
+	find_file(WAV);
 
 	unmount();
 
@@ -287,7 +284,7 @@ void Error_Handler(uint8_t ERROR)
 {
   while (1) {
     /* Turn LED2 on */
-  	switch(ERROR){
+  	switch(ERROR) {
   	case SYSCONF_ERROR1:
   		HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
   		break;
