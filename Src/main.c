@@ -50,7 +50,6 @@ void transmit_uart(char *string){
 	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 200);
 }
 
-
 /*
 FATFS fs;
 FATFS *pfs;
@@ -97,7 +96,7 @@ int main(void)
 
   /* Check if microSD is connected physically */
 	transmit_uart("-----------------------\r\n");
-	while (!check_microSD_conn()){
+	while (check_microSD_conn() == FAIL){
   	transmit_uart("MicroSD card not detected!\r\n");
   	pulse_red();
   	//HAL_Delay(1000);
@@ -105,35 +104,27 @@ int main(void)
 	transmit_uart("MicroSD card detected!\r\n");
 	transmit_uart("-----------------------\r\n");
 
-	mount_sd();
-
 	//char file_name[50] = "Crystal.txt";
 	//open_file(file_name);
-	//get_freespace();
 	//write_file();
 	//close_file();
 
 	//open_file(file_name);
 	//read_file();
 	//close_file();
+	chk_microSD();
 
-	find_file(TXT);
-	find_file(MP3);
-	find_file(WAV);
-
-	unmount();
 
 	// ------------- //
 	// Infinite Loop //
 	// ------------- //
   while (1) {
-  	if (check_microSD_conn()){
+  	if (check_microSD_conn() == PASS){
   		pulse();	// Send pulse lighting to W2812B LED Strip
   	} else {
-  		while (!(check_microSD_conn())){
+  		while (check_microSD_conn() == FAIL){
   			transmit_uart("MicroSD card not detected!\r\n");
   			pulse_red();
-  			//HAL_Delay(1000);
   		}
 			transmit_uart("MicroSD card detected!\r\n");
   	}

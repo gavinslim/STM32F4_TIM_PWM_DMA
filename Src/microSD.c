@@ -8,18 +8,7 @@
 
 #include "microSD.h"
 
-SPI_HandleTypeDef hspi2;
-UART_HandleTypeDef huart2;
 
-FATFS fs;
-FATFS *pfs;
-FIL fil;
-FRESULT fres;
-DWORD fre_clust;
-uint32_t totalSpace, freeSpace;
-
-char buffer[100];
-char file_name[50];
 
 void microSD_init (void){
 	__HAL_RCC_GPIOB_CLK_ENABLE();
@@ -66,33 +55,54 @@ void transmit_uart_SD(char *string){
 	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 200);
 }
 
-uint8_t check_microSD_conn (void) {
+sd_ret_val check_microSD_conn (void) {
 	if(!(HAL_GPIO_ReadPin(GPIOH, GPIO_PIN_1))){
-		return 0;
+		return SD_FAIL;
 	}
-	return 1;
+	return SD_PASS;
 }
 
-void mount_sd(void){
-	fres = f_mount(&fs, "", 0);
+sd_ret_val mount_sd(void){
+	//fres = f_mount(&fs, "", 0);
+	pfs = malloc(sizeof (FATFS));
+	fres = f_mount(pfs, "", 0);
 	if (fres == FR_OK) {
 		transmit_uart_SD("PASS - MicroSD card mounted successfully!\r\n");
+		return SD_PASS;
 	} else {
 		transmit_uart_SD("FAIL - MicroSD card's mount error!\r\n");
+		return SD_FAIL;
 	}
-	return;
+	return SD_FAIL;
 }
 
-void open_file(char* file_name){
+sd_ret_val unmount_sd(void){
+	//f_mount(NULL, "", 1);
+	f_mount(0, "", 1);
+	if (fres == FR_OK) {
+		transmit_uart_SD("PASS - MicroSD successfully unmounted.\r\n");
+		free(pfs);
+		return SD_PASS;
+	} else if (fres != FR_OK) {
+		transmit_uart_SD("FAIL - MicroSD failed to unmount.\r\n");
+		free(pfs);
+		return SD_FAIL;
+	}
+	return SD_FAIL;
+}
+
+sd_ret_val open_file(char* file_name){
 	if(f_open(&fil, file_name, FA_OPEN_ALWAYS | FA_READ | FA_WRITE) != FR_OK) {
 		transmit_uart_SD("FAIL - File not opened.\r\n");
+		return SD_FAIL;
 	} else {
 		transmit_uart_SD("PASS - File successfully opened.\r\n");
+		return SD_PASS;
 	}
-	return;
+	return SD_FAIL;
 }
 
-void get_freespace(void){
+sd_ret_val get_freespace(void){
 	fres = f_getfree("", &fre_clust, &pfs);
 	totalSpace = (uint32_t) ((pfs->n_fatent - 2) * pfs->csize * 0.5);
 	freeSpace = (uint32_t) (fre_clust * pfs->csize * 0.5);
@@ -104,31 +114,35 @@ void get_freespace(void){
 		transmit_uart_SD("PASS - Free space (kb): ");
 		transmit_uart_SD(mSz);
 		transmit_uart_SD("\r\n");
+		return SD_PASS;
 	} else if (fres != FR_OK) {
 		transmit_uart_SD("FAIL - Free space failed to be determined.\r\n");
+		return SD_FAIL;
 	}
-	return;
+	return SD_FAIL;
 }
 
-void write_file(void){
+sd_ret_val write_file(void){
 	for (uint8_t i = 0; i < 10; i++) {
 		f_puts("This text is written in the file.\n", &fil);
 	}
 	transmit_uart_SD("PASS - Writing complete.\r\n");
-	return;
+	return SD_PASS;
 }
 
-void close_file(void){
+sd_ret_val close_file(void){
 	fres = f_close(&fil);
 	if (fres == FR_OK) {
 		transmit_uart_SD("PASS - File successfully closed.\r\n");
+		return SD_PASS;
 	} else if (fres != FR_OK) {
 		transmit_uart_SD("FAIL - File failed to close.\r\n");
+		return SD_FAIL;
 	}
-	return;
+	return SD_FAIL;
 }
 
-void read_file(void){
+sd_ret_val read_file(void){
 	transmit_uart_SD("Reading File...\r\n");
 	transmit_uart_SD("Contents of File:\r\n");
 	transmit_uart_SD("-----------------\r\n");
@@ -142,20 +156,11 @@ void read_file(void){
 	}
 
 	transmit_uart_SD("-----------------\r\n");
-	return;
+	return SD_PASS;
 }
 
-void unmount(void){
-	f_mount(NULL, "", 1);
-	if (fres == FR_OK) {
-		transmit_uart_SD("PASS - MicroSD successfully unmounted.\r\n");
-	} else if (fres != FR_OK) {
-		transmit_uart_SD("FAIL - MicroSD failed to unmount.\r\n");
-	}
-	return;
-}
 
-void find_file (filetype f_type)
+sd_ret_val find_file (filetype f_type)
 {
     FRESULT fr;     /* Return value */
     DIR dj;         /* Directory object */
@@ -184,7 +189,7 @@ void find_file (filetype f_type)
     	break;
     default:
     	transmit_uart_SD("FAIL - Invalid file type, find_file().");
-    	return;
+    	return SD_FAIL;
     }
 
     transmit_uart_SD("\r\n");
@@ -223,6 +228,17 @@ void find_file (filetype f_type)
     }
     transmit_uart_SD("----------------\n\r");
     f_closedir(&dj);
+    return SD_PASS;
+}
+
+void chk_microSD(void){
+	if(mount_sd()){
+		get_freespace();
+		find_file(TXT);
+		find_file(MP3);
+		find_file(WAV);
+		unmount_sd();
+	}
 }
 
 /*

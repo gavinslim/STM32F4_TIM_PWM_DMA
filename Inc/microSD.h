@@ -22,6 +22,19 @@
 #define SD_CS_Pin 			GPIO_PIN_12
 #define SD_CS_GPIO_Port GPIOB
 
+SPI_HandleTypeDef hspi2;
+UART_HandleTypeDef huart2;
+
+FATFS fs;
+FATFS *pfs;
+FIL fil;
+FRESULT fres;
+DWORD fre_clust;
+uint32_t totalSpace, freeSpace;
+
+char buffer[100];
+char file_name[50];
+
 // File type
 typedef enum {
 	MP3,
@@ -29,25 +42,29 @@ typedef enum {
 	TXT
 } filetype;
 
-void Error_Handler(uint8_t ERROR);
+typedef enum {
+	SD_FAIL,
+	SD_PASS
+} sd_ret_val;
 
+void Error_Handler(uint8_t ERROR);
 void microSD_init (void);
 void transmit_uart_SD(char *string);
 
 uint8_t check_microSD_conn (void);
 uint8_t check_microSD_mount (void);
 
-void mount_sd(void);
-void open_file(char* file_name);
-void get_freespace(void);
-void write_file(void);
-void close_file(void);
-void read_file(void);
-void unmount(void);
+sd_ret_val mount_sd(void);
+sd_ret_val unmount_sd(void);
+sd_ret_val open_file(char* file_name);
+sd_ret_val get_freespace(void);
+sd_ret_val write_file(void);
+sd_ret_val close_file(void);
+sd_ret_val read_file(void);
+
+void chk_microSD(void);
 
 // Finding files in microSD card
-void find_txt_file(void);
-void find_mp3_file(void);
-void find_file (filetype f_type);
+sd_ret_val find_file (filetype f_type);
 
 #endif /* MICROSD_H_ */
