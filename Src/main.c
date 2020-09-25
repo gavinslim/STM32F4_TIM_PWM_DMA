@@ -39,6 +39,7 @@
 /* Timer Output Compare Configuration Structure declaration */
 TIM_OC_InitTypeDef sConfig;
 UART_HandleTypeDef huart2;
+UART_HandleTypeDef huart6;
 
 /* Private function prototypes -----------------------------------------------*/
 static void SystemClock_Config(void);
@@ -49,6 +50,7 @@ void transmit_uart(char *string){
 	uint8_t len = strlen(string);
 	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 200);
 }
+
 
 /*
 FATFS fs;
@@ -114,20 +116,50 @@ int main(void)
 	//close_file();
 	chk_microSD();
 
-
 	// ------------- //
 	// Infinite Loop //
 	// ------------- //
   while (1) {
   	if (check_microSD_conn() == PASS){
   		pulse();	// Send pulse lighting to W2812B LED Strip
+
+  		// Solenoid 1
+  		if (HAL_GPIO_ReadPin(BUTTON1_GPIO_Port, BUTTON1_Pin)) {
+    		transmit_uart("Button 1 Pressed!\r\n");
+    		HAL_GPIO_WritePin(LOCK1_GPIO_Port, LOCK1_Pin, GPIO_PIN_SET);
+    	} else {
+    		HAL_GPIO_WritePin(LOCK1_GPIO_Port, LOCK1_Pin, GPIO_PIN_RESET);
+    	}
+
+    	// Solenoid 2
+    	if (HAL_GPIO_ReadPin(BUTTON2_GPIO_Port, BUTTON2_Pin)){
+    		transmit_uart("Button 2 Pressed!\r\n");
+    		HAL_GPIO_WritePin(LOCK2_GPIO_Port, LOCK2_Pin, GPIO_PIN_SET);
+    	} else {
+    		HAL_GPIO_WritePin(LOCK2_GPIO_Port, LOCK2_Pin, GPIO_PIN_RESET);
+    	}
+    	// Solenoid 3
+    	if (HAL_GPIO_ReadPin(BUTTON3_GPIO_Port, BUTTON3_Pin)){
+    		transmit_uart("Button 3 Pressed!\r\n");
+    		HAL_GPIO_WritePin(LOCK3_GPIO_Port, LOCK3_Pin, GPIO_PIN_SET);
+    	} else {
+    		HAL_GPIO_WritePin(LOCK3_GPIO_Port, LOCK3_Pin, GPIO_PIN_RESET);
+    	}
+    	// Solenoid 4
+    	if (HAL_GPIO_ReadPin(BUTTON4_GPIO_Port, BUTTON4_Pin)){
+    		transmit_uart("Button 4 Pressed!\r\n");
+    		HAL_GPIO_WritePin(LOCK4_GPIO_Port, LOCK4_Pin, GPIO_PIN_SET);
+    	} else {
+    		HAL_GPIO_WritePin(LOCK4_GPIO_Port, LOCK4_Pin, GPIO_PIN_RESET);
+    	}
+
   	} else {
   		while (check_microSD_conn() == FAIL){
   			transmit_uart("MicroSD card not detected!\r\n");
   			pulse_red();
   		}
-			transmit_uart("MicroSD card detected!\r\n");
   	}
+
   }
 }
 
@@ -231,6 +263,46 @@ static void MX_GPIO_Init(void){
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(SD_CS_GPIO_Port, &GPIO_InitStruct);
+
+	/*Configure GPIO pin :
+	 * Button 1 PA1
+	 * Button 2 PA10
+	 * Button 3 PA11
+	 * Button 4 PA12
+	 * Lock 1	PA9
+	 * Lock 2	PA8
+	 * Lock 3
+	 * Lock 4 */
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_1, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = GPIO_PIN_1|GPIO_PIN_10|GPIO_PIN_11|GPIO_PIN_12;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_8, GPIO_PIN_RESET);
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_9, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : PA9 */
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = GPIO_PIN_9;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+	/*Configure GPIO pin : PC0 Test */
+	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = GPIO_PIN_0;
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 }
 
 /**
@@ -263,6 +335,40 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
+
+}
+
+
+/**
+  * @brief USART6 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART6_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART6_Init 0 */
+
+  /* USER CODE END USART6_Init 0 */
+
+  /* USER CODE BEGIN USART6_Init 1 */
+
+  /* USER CODE END USART6_Init 1 */
+  huart6.Instance = USART6;
+  huart6.Init.BaudRate = 115200;
+  huart6.Init.WordLength = UART_WORDLENGTH_8B;
+  huart6.Init.StopBits = UART_STOPBITS_1;
+  huart6.Init.Parity = UART_PARITY_NONE;
+  huart6.Init.Mode = UART_MODE_TX_RX;
+  huart6.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart6.Init.OverSampling = UART_OVERSAMPLING_16;
+  if (HAL_UART_Init(&huart6) != HAL_OK)
+  {
+    Error_Handler(UART_ERROR);
+  }
+  /* USER CODE BEGIN USART6_Init 2 */
+
+  /* USER CODE END USART6_Init 2 */
 
 }
 

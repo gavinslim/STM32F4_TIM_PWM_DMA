@@ -12,8 +12,12 @@
 #include "string.h"
 #include "stm32f4xx.h"
 
+/*
+ * W812B DIN - PA0 (A0)
+ */
+
 //LED Strip variables
-#define LED_CFG_STRIP_CNT		 			5 //109		// Number of LEDs in strip
+#define LED_CFG_STRIP_CNT		 			10 //109		// Number of LEDs in strip
 #define LED_CFG_NUM_COLOR					1		// Number of colors in each LED (RGB = 3)
 #define LED_CFG_BYTES_PER_LED 		3		// Each color is represented by 8 bits
 #define LED_CFG_BITS_PER_LED	(LED_CFG_STRIP_CNT * LED_CFG_BYTES_PER_LED * 8)	//8 bits = 1 byte

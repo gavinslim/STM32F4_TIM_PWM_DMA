@@ -32,7 +32,7 @@ void rainbow(size_t i){
 void pulse(void){
 	volatile uint32_t timeout;
 	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
-		set_LED_colors((i + 0) % LED_CFG_STRIP_CNT, 0x1F, 0x0, 0x1F);
+		set_LED_colors((i + 0) % LED_CFG_STRIP_CNT, 0x0, 0x1F, 0x0);
 		//set_LED_colors((i + 1) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
 		//set_LED_colors((i + 2) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
 		//set_LED_colors((i + 3) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);

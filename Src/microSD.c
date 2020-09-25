@@ -78,7 +78,7 @@ sd_ret_val mount_sd(void){
 
 sd_ret_val unmount_sd(void){
 	//f_mount(NULL, "", 1);
-	f_mount(0, "", 1);
+	f_mount(0, "", 0);
 	if (fres == FR_OK) {
 		transmit_uart_SD("PASS - MicroSD successfully unmounted.\r\n");
 		free(pfs);
@@ -240,84 +240,3 @@ void chk_microSD(void){
 		unmount_sd();
 	}
 }
-
-/*
-char mRd[100];
-if (read_file(mRd)){
-	transmit_uart("PASS - Done reading");
-	transmit_uart(mRd);
-}
-*/
-/*
-fres = f_mount(&fs, "", 0);
-if (fres == FR_OK) {
-	transmit_uart("Micro SD card is mounted successfully!\r\n");
-} else if (fres != FR_OK) {
-	transmit_uart("Micro SD card's mount error!\r\n");
-}
-
-if(f_open(&fil, "first.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE) != FR_OK) {
-	transmit_uart("FAIL - File not opened\r\n");
-	Error_Handler(OPEN_ERROR);
-} else {
-	transmit_uart("PASS - File successfully opened\r\n");
-}
-
-fres = f_getfree("", &fre_clust, &pfs);
-totalSpace = (uint32_t) ((pfs->n_fatent - 2) * pfs->csize * 0.5);
-freeSpace = (uint32_t) (fre_clust * pfs->csize * 0.5);
-
-char mSz[12];
-sprintf(mSz, "%lu", freeSpace);
-
-if (fres == FR_OK) {
-	transmit_uart("The free space is: ");
-	transmit_uart(mSz);
-	transmit_uart("\r\n");
-} else if (fres != FR_OK) {
-	transmit_uart("The free space could not be determined!\r\n");
-}
-
-for (uint8_t i = 0; i < 10; i++) {
-	f_puts("This text is written in the file.\r\n", &fil);
-}
-
-fres = f_close(&fil);
-if (fres == FR_OK) {
-	transmit_uart("The file is closed.\r\n");
-} else if (fres != FR_OK) {
-	transmit_uart("The file was not closed.\r\n");
-}
-
-if(f_open(&fil, "first.txt", FA_OPEN_ALWAYS | FA_READ | FA_WRITE) != FR_OK) {
-	transmit_uart("FAIL - File not opened\r\n");
-	Error_Handler(OPEN_ERROR);
-} else {
-	transmit_uart("PASS - File successfully opened for reading\r\n");
-}
-
-transmit_uart("--------------------------------------\n\r");
-while (f_gets(buffer, sizeof(buffer), &fil)) {
-	char mRd[100];
-	sprintf(mRd, "%s", buffer);
-	transmit_uart(mRd);
-	transmit_uart("\r");
-}
-transmit_uart("--------------------------------------\n\r");
-
-// Close file
-fres = f_close(&fil);
-if (fres == FR_OK) {
-	transmit_uart("The file is closed.\r\n");
-} else if (fres != FR_OK) {
-	transmit_uart("The file was not closed.\r\n");
-}
-
-f_mount(NULL, "", 1);
-if (fres == FR_OK) {
-	transmit_uart("The Micro SD card is unmounted!\r\n");
-} else if (fres != FR_OK) {
-	transmit_uart("The Micro SD was not unmounted!");
-}
-*/
-

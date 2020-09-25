@@ -22,6 +22,14 @@
 #define SD_CS_Pin 			GPIO_PIN_12
 #define SD_CS_GPIO_Port GPIOB
 
+/*
+ * CD Pin - PH1
+ * CS Pin - PB12
+ * DI Pin - PC3
+ * DO Pin - PC2
+ * CLK Pin - PB10 (PWM/D6)
+ */
+
 SPI_HandleTypeDef hspi2;
 UART_HandleTypeDef huart2;
 
