@@ -1,8 +1,4 @@
-Src/main.o: ../Src/main.c ../Inc/main.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
- ../Inc/stm32f4xx_hal_conf.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h \
+Src/tm1637_.o: ../Src/tm1637_.c ../Inc/tm1637_.h \
  ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h \
  ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f411xe.h \
  ../Drivers/CMSIS/Include/core_cm4.h \
@@ -11,6 +7,10 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
  ../Drivers/CMSIS/Include/cmsis_gcc.h \
  ../Drivers/CMSIS/Include/mpu_armv7.h \
  ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h \
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h \
+ ../Inc/stm32f4xx_hal_conf.h \
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h \
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc_ex.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_gpio.h \
@@ -26,24 +26,9 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_spi.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim.h \
  ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h \
- ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h ../Inc/w2812b.h \
- ../Inc/tm1637_.h ../Inc/microSD.h ../Inc/fatfs.h \
- ../Middlewares/Third_Party/FatFs/src/ff.h \
- ../Middlewares/Third_Party/FatFs/src/integer.h ../Inc/ffconf.h \
- ../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h \
- ../Middlewares/Third_Party/FatFs/src/diskio.h \
- ../Middlewares/Third_Party/FatFs/src/ff.h ../Inc/user_diskio.h \
- ../Inc/fatfs_sd.h
+ ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h
 
-../Inc/main.h:
-
-../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
-
-../Inc/stm32f4xx_hal_conf.h:
-
-../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:
-
-../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h:
+../Inc/tm1637_.h:
 
 ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/stm32f4xx.h:
 
@@ -60,6 +45,14 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
 ../Drivers/CMSIS/Include/mpu_armv7.h:
 
 ../Drivers/CMSIS/Device/ST/STM32F4xx/Include/system_stm32f4xx.h:
+
+../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal.h:
+
+../Inc/stm32f4xx_hal_conf.h:
+
+../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_rcc.h:
+
+../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_def.h:
 
 ../Drivers/STM32F4xx_HAL_Driver/Inc/Legacy/stm32_hal_legacy.h:
 
@@ -92,27 +85,3 @@ Src/main.o: ../Src/main.c ../Inc/main.h \
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_tim_ex.h:
 
 ../Drivers/STM32F4xx_HAL_Driver/Inc/stm32f4xx_hal_uart.h:
-
-../Inc/w2812b.h:
-
-../Inc/tm1637_.h:
-
-../Inc/microSD.h:
-
-../Inc/fatfs.h:
-
-../Middlewares/Third_Party/FatFs/src/ff.h:
-
-../Middlewares/Third_Party/FatFs/src/integer.h:
-
-../Inc/ffconf.h:
-
-../Middlewares/Third_Party/FatFs/src/ff_gen_drv.h:
-
-../Middlewares/Third_Party/FatFs/src/diskio.h:
-
-../Middlewares/Third_Party/FatFs/src/ff.h:
-
-../Inc/user_diskio.h:
-
-../Inc/fatfs_sd.h:

@@ -1,4 +1,7 @@
-stm32f4xx_hal_msp.c:51:6:HAL_TIM_PWM_MspInit	16	static
-stm32f4xx_hal_msp.c:120:6:HAL_UART_MspInit	56	static
-stm32f4xx_hal_msp.c:180:6:HAL_SPI_MspInit	48	static
-stm32f4xx_hal_msp.c:225:6:HAL_SPI_MspDeInit	16	static
+stm32f4xx_hal_msp.c:51:6:HAL_MspInit	16	static
+stm32f4xx_hal_msp.c:76:6:HAL_TIM_Base_MspInit	24	static
+stm32f4xx_hal_msp.c:101:6:HAL_TIM_Base_MspDeInit	16	static
+stm32f4xx_hal_msp.c:120:6:HAL_TIM_PWM_MspInit	16	static
+stm32f4xx_hal_msp.c:189:6:HAL_UART_MspInit	56	static
+stm32f4xx_hal_msp.c:249:6:HAL_SPI_MspInit	48	static
+stm32f4xx_hal_msp.c:294:6:HAL_SPI_MspDeInit	16	static

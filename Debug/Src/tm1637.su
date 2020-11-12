@@ -1,0 +1,7 @@
+tm1637.c:20:6:TM1637_Init	32	static
+tm1637.c:39:6:write_byte	16	static
+tm1637.c:43:6:delaymicrosec	24	static,ignoring_inline_asm
+tm1637.c:53:6:set_dio_low	8	static
+tm1637.c:57:6:set_dio_high	8	static
+tm1637.c:61:6:set_clk_low	8	static
+tm1637.c:65:6:set_clk_high	8	static

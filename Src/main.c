@@ -22,17 +22,43 @@
 #include "string.h"
 #include "w2812b.h"
 #include <stdio.h> //UART
+#include <tm1637_.h>
 #include "microSD.h"
 
 /* Private typedef -----------------------------------------------------------*/
 //GPIO_InitTypeDef GPIO_InitStruct;
 
 /* Private define ------------------------------------------------------------*/
-
+#define ON 1
+#define OFF 0
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
 //char buffer[100];
+uint8_t UART6_rxBuffer[10];
+
+/* Timer Definitions */
+//int curr_time = COUNTDOWN_TIME;
+int min_time = COUNTDOWN_MIN;
+int sec_time = COUNTDOWN_SEC;
+int time_flag = 0;
+int end_dur = 5;
+
+/* Locker countdown */
+int start_lockdown = 0;
+int lock_counter = 0;
+int lock_progress = 0;
+
+/* LED colour */
+typedef enum color{
+	GREEN,
+	ORANGE,
+	PURPLE,
+	BLUE,
+	RED
+}color;
+
+color LED_color;
 
 /* Timer handler declaration */
 
@@ -45,21 +71,72 @@ UART_HandleTypeDef huart6;
 static void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_USART2_UART_Init(void);
+static void MX_USART6_UART_Init(void);
+static void MX_TIM3_Init(void);
 
 void transmit_uart(char *string){
 	uint8_t len = strlen(string);
 	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 200);
 }
 
+void lock_5sec(GPIO_TypeDef* lockPort, uint16_t lockPin){
+	if (lock_progress == 0){
+		transmit_uart("Locking for 5seconds\r\n");
+		start_lockdown = 1;
+	}
 
-/*
-FATFS fs;
-FATFS *pfs;
-FIL fil;
-FRESULT fres;
-DWORD fre_clust;
-uint32_t totalSpace, freeSpace;
-*/
+	if (start_lockdown == 1){
+		HAL_GPIO_WritePin(lockPort, lockPin, GPIO_PIN_SET);
+	} else {
+		HAL_GPIO_WritePin(lockPort, lockPin, GPIO_PIN_RESET);
+	}
+
+}
+
+void solenoid_control(GPIO_TypeDef* lockPort, uint16_t lockPin, uint8_t status){
+	if (status == ON){
+		HAL_GPIO_WritePin(lockPort, lockPin, GPIO_PIN_SET);
+	  start_lockdown = 1;
+	} else {
+		HAL_GPIO_WritePin(lockPort, lockPin, GPIO_PIN_RESET);
+	}
+}
+
+/* Callback called by HAL_UART_IRQHandler when given number of bytes is received */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
+	if (huart->Instance == USART6){
+		/* Receive data in interrupt mode */
+		HAL_UART_Receive_IT(&huart6, UART6_rxBuffer, 1);
+		//transmit_uart((char*) UART6_rxBuffer);
+
+		switch(UART6_rxBuffer[0]){
+		case (uint8_t)'R':
+			LED_color = RED;
+			transmit_uart("Received 'Red'\r\n");
+		  //lock_5sec(LOCK1_GPIO_Port, LOCK1_Pin);
+			break;
+		case (uint8_t)'G':
+			LED_color = GREEN;
+			transmit_uart("Received 'Green'\r\n");
+			break;
+		case (uint8_t)'B':
+			LED_color = BLUE;
+			transmit_uart("Received 'Blue'\r\n");
+			break;
+		case (uint8_t)'P':
+			LED_color = PURPLE;
+			transmit_uart("Received 'Purple'\r\n");
+			break;
+		case (uint8_t)'O':
+			LED_color = ORANGE;
+			transmit_uart("Received 'Orange'\r\n");
+		  break;
+		default:
+			break;
+		}
+	}
+}
+
 
 /**
   * @brief  Main program.
@@ -79,6 +156,12 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_USART2_UART_Init();
+  MX_USART6_UART_Init();
+
+  /* Initialize countdown timer */
+  MX_TIM3_Init();
+  HAL_TIM_Base_Start_IT(&htim3);	//Interrupt triggers every second
+  time_flag = 0;
 
   // microSD Setup
   microSD_init();
@@ -88,6 +171,9 @@ int main(void)
   LED_Init();
   LED_set_color_all(0x00, 0x00, 0x00);	//Set color order of array. Ex: R0,G0,B0,R1,G1,B1
   LED_update(1);
+
+  // Bluetooth Setup
+	HAL_UART_Receive_IT(&huart6, UART6_rxBuffer, 1);
 
   // ------------------------------ //
   //       microSD Card Init        //
@@ -116,17 +202,77 @@ int main(void)
 	//close_file();
 	chk_microSD();
 
+	// Timer Count Down //
+	// ---------------- //
+  tm1637Init();
+  tm1637SetBrightness(3);	 // Optionally set brightness. 0 is off. By default, initialized to full brightness.
+  tm1637DisplayTime(99, 99, 1);   // Display the value "1234" and turn on the `:` that is between digits 2 and 3.
+
 	// ------------- //
 	// Infinite Loop //
 	// ------------- //
   while (1) {
   	if (check_microSD_conn() == PASS){
-  		pulse();	// Send pulse lighting to W2812B LED Strip
+  		/*
+  		switch(UART6_rxBuffer[0]){
+  		case (uint8_t)'R':
+  			LED_color = RED;
+  			transmit_uart("Red\r\n");
+  		  //lock_5sec(LOCK1_GPIO_Port, LOCK1_Pin);
+  			break;
+  		case (uint8_t)'G':
+  			LED_color = GREEN;
+  			transmit_uart("Green\r\n");
+  			break;
+  		case (uint8_t)'B':
+  			LED_color = BLUE;
+  			transmit_uart("Blue\r\n");
+  			break;
+  		case (uint8_t)'P':
+  			LED_color = PURPLE;
+  			transmit_uart("Purple\r\n");
+  			break;
+  		case (uint8_t)'O':
+  			LED_color = ORANGE;
+  			transmit_uart("Orange\r\n");
+  		  break;
+  		default:
+  			break;
+  		}
+			*/
 
+  		// Check status of LED strip
+  		switch(LED_color){
+  		case GREEN:
+  			pulse();
+  			break;
+  		case ORANGE:
+  			pulse_orange();
+  			break;
+  		case BLUE:
+  			pulse_blue();
+  			break;
+  		case RED:
+  			pulse_red();
+  			break;
+  		case PURPLE:
+  			pulse_purple();
+  			break;
+  		default:
+  			break;
+  		}
+
+  		// Check status of solenoid
+
+
+  		//_tm1637Start();
   		// Solenoid 1
+  		/*
   		if (HAL_GPIO_ReadPin(BUTTON1_GPIO_Port, BUTTON1_Pin)) {
     		transmit_uart("Button 1 Pressed!\r\n");
     		HAL_GPIO_WritePin(LOCK1_GPIO_Port, LOCK1_Pin, GPIO_PIN_SET);
+    		LED_color = GREEN;
+  			time_flag = !time_flag;	//Toggle flag to countdown timer
     	} else {
     		HAL_GPIO_WritePin(LOCK1_GPIO_Port, LOCK1_Pin, GPIO_PIN_RESET);
     	}
@@ -135,23 +281,48 @@ int main(void)
     	if (HAL_GPIO_ReadPin(BUTTON2_GPIO_Port, BUTTON2_Pin)){
     		transmit_uart("Button 2 Pressed!\r\n");
     		HAL_GPIO_WritePin(LOCK2_GPIO_Port, LOCK2_Pin, GPIO_PIN_SET);
+    		LED_color = ORANGE;
     	} else {
     		HAL_GPIO_WritePin(LOCK2_GPIO_Port, LOCK2_Pin, GPIO_PIN_RESET);
     	}
+
+  		if (HAL_GPIO_ReadPin(BUTTON2_GPIO_Port, BUTTON2_Pin)) {
+    		transmit_uart("Button 2 Pressed!\r\n");
+  			solenoid_control(LOCK2_GPIO_Port, LOCK1_Pin, ON);
+  		} else {
+    		solenoid_control(LOCK2_GPIO_Port, LOCK1_Pin, OFF);
+  		}
+
     	// Solenoid 3
     	if (HAL_GPIO_ReadPin(BUTTON3_GPIO_Port, BUTTON3_Pin)){
     		transmit_uart("Button 3 Pressed!\r\n");
     		HAL_GPIO_WritePin(LOCK3_GPIO_Port, LOCK3_Pin, GPIO_PIN_SET);
+    		LED_color = BLUE;
     	} else {
     		HAL_GPIO_WritePin(LOCK3_GPIO_Port, LOCK3_Pin, GPIO_PIN_RESET);
     	}
+
     	// Solenoid 4
     	if (HAL_GPIO_ReadPin(BUTTON4_GPIO_Port, BUTTON4_Pin)){
     		transmit_uart("Button 4 Pressed!\r\n");
     		HAL_GPIO_WritePin(LOCK4_GPIO_Port, LOCK4_Pin, GPIO_PIN_SET);
+    		LED_color = RED;
     	} else {
     		HAL_GPIO_WritePin(LOCK4_GPIO_Port, LOCK4_Pin, GPIO_PIN_RESET);
     	}
+
+    	// Solenoid 5
+    	if (HAL_GPIO_ReadPin(BUTTON5_GPIO_Port, BUTTON5_Pin)){
+    		transmit_uart("Button 5 Pressed!\r\n");
+    		HAL_GPIO_WritePin(LOCK5_GPIO_Port, LOCK5_Pin, GPIO_PIN_SET);
+    		LED_color = PURPLE;
+    	} else {
+    		HAL_GPIO_WritePin(LOCK5_GPIO_Port, LOCK5_Pin, GPIO_PIN_RESET);
+    	}
+			*/
+
+    	// Clear buffer
+  		//memset(UART6_rxBuffer, '\0', sizeof(UART6_rxBuffer));
 
   	} else {
   		while (check_microSD_conn() == FAIL){
@@ -290,19 +461,27 @@ static void MX_GPIO_Init(void){
 
 	/*Configure GPIO pin : PA9 */
 	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_9, GPIO_PIN_RESET);
-	GPIO_InitStruct.Pin = GPIO_PIN_9;
+	HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = GPIO_PIN_8|GPIO_PIN_9;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
 	HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-	/*Configure GPIO pin : PC0 Test */
-	HAL_GPIO_WritePin(GPIOC, GPIO_PIN_0, GPIO_PIN_RESET);
-	GPIO_InitStruct.Pin = GPIO_PIN_0;
+	/* Button4 PB14, Lock PB15 */
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_15, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = GPIO_PIN_15;
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
 	GPIO_InitStruct.Pull = GPIO_NOPULL;
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-	HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+	HAL_GPIO_WritePin(GPIOB, GPIO_PIN_14, GPIO_PIN_RESET);
+	GPIO_InitStruct.Pin = GPIO_PIN_14;
+	GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+	GPIO_InitStruct.Pull = GPIO_NOPULL;
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 }
 
 /**
@@ -338,7 +517,6 @@ static void MX_USART2_UART_Init(void)
 
 }
 
-
 /**
   * @brief USART6 Initialization Function
   * @param None
@@ -355,7 +533,7 @@ static void MX_USART6_UART_Init(void)
 
   /* USER CODE END USART6_Init 1 */
   huart6.Instance = USART6;
-  huart6.Init.BaudRate = 115200;
+  huart6.Init.BaudRate = 9600;
   huart6.Init.WordLength = UART_WORDLENGTH_8B;
   huart6.Init.StopBits = UART_STOPBITS_1;
   huart6.Init.Parity = UART_PARITY_NONE;
@@ -367,9 +545,107 @@ static void MX_USART6_UART_Init(void)
     Error_Handler(UART_ERROR);
   }
   /* USER CODE BEGIN USART6_Init 2 */
-
+  HAL_NVIC_SetPriority(USART6_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(USART6_IRQn);
   /* USER CODE END USART6_Init 2 */
 
+}
+
+/**
+  * @brief TIM3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM3_Init(void)
+{
+
+  /* USER CODE BEGIN TIM3_Init 0 */
+
+  /* USER CODE END TIM3_Init 0 */
+
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+
+  /* USER CODE BEGIN TIM3_Init 1 */
+
+  /* USER CODE END TIM3_Init 1 */
+  htim3.Instance = TIM3;
+  htim3.Init.Prescaler = 41999;	//84MHz/(42000 * 2000); max value of PSC and ARR is 2^16
+  htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim3.Init.Period = 1999;
+  htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim3) != HAL_OK)
+  {
+    Error_Handler(UART_ERROR);
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim3, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler(UART_ERROR);
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim3, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler(UART_ERROR);
+  }
+  /* USER CODE BEGIN TIM3_Init 2 */
+
+  /* USER CODE END TIM3_Init 2 */
+
+}
+
+/* TIM3 interrupt called every second */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim3){
+
+	// Start lock countdown if enabled
+	if (start_lockdown == 1){
+		lock_counter = 5;
+
+		start_lockdown = 0;
+		lock_progress = 1;
+	}
+
+	// Countdown lock counter
+	if (lock_progress == 1){
+		lock_counter--;
+		transmit_uart("Counting down...\r\n");
+		if (lock_counter == 0){
+			lock_progress = 0;
+			transmit_uart("Done locking.\r\n");
+		}
+	}
+
+	//transmit_uart("time\r\n");
+
+	if (time_flag == 1){
+		if (min_time == 0 && sec_time == 0){
+
+			//Blink every other second
+			if (end_dur % 2 == 1){
+				tm1637SetBrightness(0);
+			} else {
+				tm1637SetBrightness(3);
+			}
+
+			// After 5 seconds, reset timer
+			if (end_dur == 0){
+				end_dur = sec_time - (sec_time - 5);
+				min_time = COUNTDOWN_MIN;
+				sec_time = COUNTDOWN_SEC;
+			}
+			end_dur--;
+		} else {
+			if (sec_time == 0){
+				min_time--;
+				sec_time = SIXTY_SECONDS - 1;
+			} else {
+				sec_time--;
+			}
+		}
+		tm1637DisplayTime(min_time, sec_time, 1);
+	}
 }
 
 /**

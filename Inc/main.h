@@ -76,12 +76,25 @@ void Error_Handler(uint8_t ERROR);
 #define LOCK4_Pin GPIO_PIN_8
 #define LOCK4_GPIO_Port GPIOC
 
+// Button4 PB14, Lock PB15
+#define BUTTON5_Pin GPIO_PIN_14
+#define BUTTON5_GPIO_Port GPIOB
+#define LOCK5_Pin GPIO_PIN_15
+#define LOCK5_GPIO_Port GPIOB
+
 //microSD
 #define MICRO_D0_Pin GPIO_PIN_2
 #define MICRO_DI_Pin GPIO_PIN_3
 #define MICRO_DATA_GPIO_Port GPIOC
 #define MICRO_CLK_Pin GPIO_PIN_10
 #define MICRO_CLK_GPIO_Port GPIOB
+
+//#define COUNTDOWN_TIME 10
+#define COUNTDOWN_MIN 1
+#define COUNTDOWN_SEC 10
+#define SIXTY_MINUTE 60
+#define SIXTY_SECONDS 60
+
 enum {
 	FAIL,
 	PASS

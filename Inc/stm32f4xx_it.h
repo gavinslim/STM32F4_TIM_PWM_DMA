@@ -60,6 +60,7 @@ void DebugMon_Handler(void);
 void PendSV_Handler(void);
 void SysTick_Handler(void);
 void TIMx_DMA_IRQHandler(void);
+void TIM3_IRQHandler(void);
 
 #ifdef __cplusplus
 }

@@ -89,6 +89,9 @@ void DMA1_Stream5_IRQHandler(void);
 void rainbow(size_t i);
 void pulse(void);
 void pulse_red(void);
+void pulse_orange(void);
+void pulse_blue(void);
+void pulse_purple(void);
 void pingpong(void);
 
 #endif /* W2812B_H_ */

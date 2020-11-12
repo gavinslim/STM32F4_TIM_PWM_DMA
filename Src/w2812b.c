@@ -71,6 +71,64 @@ void pulse_red(void){
 	return;
 }
 
+// Pulse orange
+void pulse_orange(void){
+	volatile uint32_t timeout;
+	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
+		set_LED_colors((i + 0) % LED_CFG_STRIP_CNT, 0x53, 0x1F, 0x0);
+		//set_LED_colors((i + 1) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
+		//set_LED_colors((i + 2) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 3) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 4) % LED_CFG_STRIP_CNT, 0, 0x7F, 0);
+		//set_LED_colors((i + 5) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 6) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 7) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
+		//set_LED_colors((i + 8) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
+
+		LED_update(1);
+		LED_set_color_all(0, 0, 0);
+		timeout = 0x7FFFF;
+		while (--timeout) {}
+	}
+	return;
+}
+
+// Pulse blue
+void pulse_blue(void){
+	volatile uint32_t timeout;
+	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
+		set_LED_colors((i + 0) % LED_CFG_STRIP_CNT, 0x00, 0x00, 0x1F);
+		//set_LED_colors((i + 1) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
+		//set_LED_colors((i + 2) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 3) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 4) % LED_CFG_STRIP_CNT, 0, 0x7F, 0);
+		//set_LED_colors((i + 5) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 6) % LED_CFG_STRIP_CNT, 0, 0x1F, 0);
+		//set_LED_colors((i + 7) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
+		//set_LED_colors((i + 8) % LED_CFG_STRIP_CNT, 0, 0x7, 0);
+
+		LED_update(1);
+		LED_set_color_all(0, 0, 0);
+		timeout = 0x7FFFF;
+		while (--timeout) {}
+	}
+	return;
+}
+
+// Pulse purple
+void pulse_purple(void){
+	volatile uint32_t timeout;
+	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
+		set_LED_colors((i + 0) % LED_CFG_STRIP_CNT, 0x80, 0x00, 0x80);
+
+		LED_update(1);
+		LED_set_color_all(0, 0, 0);
+		timeout = 0x7FFFF;
+		while (--timeout) {}
+	}
+	return;
+}
+
 void pingpong(void){
 	volatile uint32_t timeout;
 	for (size_t i = 0; i < LED_CFG_STRIP_CNT; i++) {
@@ -304,21 +362,6 @@ void LED_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF1_TIM2;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
-  // Configure GPIO pin: PA8, debugging for DMA IRQ
-  HAL_GPIO_WritePin(GPIOA, GPIO_PIN_8, GPIO_PIN_RESET);
-  GPIO_InitStruct.Pin = GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  // Configure GPIO pin: PB0, PB10, debugging for is_updating flag
-  //HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10, GPIO_PIN_RESET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_0, GPIO_PIN_RESET);
-  GPIO_InitStruct.Pin = GPIO_PIN_0;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
   /* -------------- */
   /* TIM2 Channel 1 */
   /* -------------- */
@@ -328,9 +371,9 @@ void LED_Init(void)
 
   // TIM Time Base handle Structure definition
   // Period = TIM2_counter_clk / PWM_freq - 1
-  // Period = 84MHz / 800kHz - 1 = 104
+  // Period = 84MHz / 800kHz - 1 = 104 sec
   htim2.Instance               = TIM2;
-  htim2.Init.Prescaler         = 0;										// Set to 0 to acheive max frequency for timer at 84MHz
+  htim2.Init.Prescaler         = 0;										// Set to 0 to achieve max frequency for timer at 84MHz
   htim2.Init.CounterMode       = TIM_COUNTERMODE_UP;
   htim2.Init.Period            = TIM_PERIOD;
   htim2.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
@@ -399,3 +442,4 @@ void LED_Init(void)
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
 }
+

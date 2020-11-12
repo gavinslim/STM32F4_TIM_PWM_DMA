@@ -1,0 +1,13 @@
+tm1637_.c:39:6:tm1637Init	40	static
+tm1637_.c:55:6:tm1637DisplayDecimal	32	static
+tm1637_.c:83:6:tm1637DisplayTime	40	static
+tm1637_.c:121:6:tm1637SetBrightness	16	static
+tm1637_.c:134:6:_tm1637Start	8	static
+tm1637_.c:142:6:_tm1637Stop	8	static
+tm1637_.c:153:6:_tm1637ReadResult	8	static
+tm1637_.c:163:6:_tm1637WriteByte	24	static
+tm1637_.c:191:6:_tm1637DelayUsec	24	static,ignoring_inline_asm
+tm1637_.c:203:6:_tm1637ClkHigh	8	static
+tm1637_.c:208:6:_tm1637ClkLow	8	static
+tm1637_.c:213:6:_tm1637DioHigh	8	static
+tm1637_.c:218:6:_tm1637DioLow	8	static
