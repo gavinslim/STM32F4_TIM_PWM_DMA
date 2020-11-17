@@ -90,10 +90,26 @@ void Error_Handler(uint8_t ERROR);
 #define MICRO_CLK_GPIO_Port GPIOB
 
 //#define COUNTDOWN_TIME 10
-#define COUNTDOWN_MIN 1
-#define COUNTDOWN_SEC 10
+#define COUNTDOWN_MIN 5
+#define COUNTDOWN_SEC 00
 #define SIXTY_MINUTE 60
 #define SIXTY_SECONDS 60
+
+//Solenoid
+#define NUM_OF_LOCKS 10
+#define MAX_TIMER 99
+#define UNLOCK_DELAY 1
+#define MAX_UNLOCK_ATTEMPTS 5
+/*
+#define LOCK1_MASK 0b00000001
+#define LOCK2_MASK 0b00000010
+#define LOCK3_MASK 0b00000100
+#define LOCK4_MASK 0b00001000
+#define LOCK5_MASK 0b00010000
+#define LOCK6_MASK 0b00100000
+#define LOCK7_MASK 0b01000000
+#define LOCK8_MASK 0b10000000
+*/
 
 enum {
 	FAIL,

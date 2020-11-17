@@ -31,6 +31,7 @@
 /* Private define ------------------------------------------------------------*/
 #define ON 1
 #define OFF 0
+
 /* Private macro -------------------------------------------------------------*/
 
 /* Private variables ---------------------------------------------------------*/
@@ -44,10 +45,8 @@ int sec_time = COUNTDOWN_SEC;
 int time_flag = 0;
 int end_dur = 5;
 
-/* Locker countdown */
-int start_lockdown = 0;
-int lock_counter = 0;
-int lock_progress = 0;
+int lock_bin_flag = 0b00000000;
+int lock_prog_bin = 0b00000000;
 
 /* LED colour */
 typedef enum color{
@@ -59,6 +58,18 @@ typedef enum color{
 }color;
 
 color LED_color;
+
+/* Solenoid */
+int start_lockdown = 0;
+int lock_counter = 0;
+int lock_progress = 0;
+int timer_cnt = 0;
+
+uint8_t end_time_arr[NUM_OF_LOCKS];
+uint8_t lock_flag_arr[NUM_OF_LOCKS] = {0};
+uint8_t lock_prog_arr[NUM_OF_LOCKS] = {0};
+uint16_t lock_pin_arr[NUM_OF_LOCKS] = {LOCK1_Pin, LOCK2_Pin, LOCK3_Pin, LOCK4_Pin, LOCK5_Pin};
+GPIO_TypeDef* lock_port_arr[NUM_OF_LOCKS] = {LOCK1_GPIO_Port, LOCK2_GPIO_Port, LOCK3_GPIO_Port, LOCK4_GPIO_Port, LOCK5_GPIO_Port};
 
 /* Timer handler declaration */
 
@@ -79,27 +90,13 @@ void transmit_uart(char *string){
 	HAL_UART_Transmit(&huart2, (uint8_t*) string, len, 200);
 }
 
-void lock_5sec(GPIO_TypeDef* lockPort, uint16_t lockPin){
-	if (lock_progress == 0){
-		transmit_uart("Locking for 5seconds\r\n");
-		start_lockdown = 1;
-	}
-
-	if (start_lockdown == 1){
-		HAL_GPIO_WritePin(lockPort, lockPin, GPIO_PIN_SET);
-	} else {
-		HAL_GPIO_WritePin(lockPort, lockPin, GPIO_PIN_RESET);
-	}
-
-}
-
-void solenoid_control(GPIO_TypeDef* lockPort, uint16_t lockPin, uint8_t status){
-	if (status == ON){
-		HAL_GPIO_WritePin(lockPort, lockPin, GPIO_PIN_SET);
-	  start_lockdown = 1;
-	} else {
-		HAL_GPIO_WritePin(lockPort, lockPin, GPIO_PIN_RESET);
-	}
+void int2uart(uint8_t input){
+	char text[20];
+	sprintf(text, "%d", input);
+	char *p = text;
+	transmit_uart("Timer: ");
+	transmit_uart(p);
+	transmit_uart("\r\n");
 }
 
 /* Callback called by HAL_UART_IRQHandler when given number of bytes is received */
@@ -107,36 +104,76 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart){
 	if (huart->Instance == USART6){
 		/* Receive data in interrupt mode */
 		HAL_UART_Receive_IT(&huart6, UART6_rxBuffer, 1);
-		//transmit_uart((char*) UART6_rxBuffer);
+		transmit_uart((char*) UART6_rxBuffer);
+		transmit_uart("\r\n");
 
 		switch(UART6_rxBuffer[0]){
 		case (uint8_t)'R':
 			LED_color = RED;
 			transmit_uart("Received 'Red'\r\n");
-		  //lock_5sec(LOCK1_GPIO_Port, LOCK1_Pin);
+			lock_flag_arr[RED] = 1;
 			break;
 		case (uint8_t)'G':
 			LED_color = GREEN;
 			transmit_uart("Received 'Green'\r\n");
+			lock_flag_arr[GREEN] = 1;
 			break;
 		case (uint8_t)'B':
 			LED_color = BLUE;
 			transmit_uart("Received 'Blue'\r\n");
+			lock_flag_arr[BLUE] = 1;
 			break;
 		case (uint8_t)'P':
 			LED_color = PURPLE;
 			transmit_uart("Received 'Purple'\r\n");
+			lock_flag_arr[PURPLE] = 1;
 			break;
 		case (uint8_t)'O':
 			LED_color = ORANGE;
 			transmit_uart("Received 'Orange'\r\n");
+			lock_flag_arr[ORANGE] = 1;
 		  break;
+		case (uint8_t)'V':
+			if (min_time < 59) {
+				min_time += 1;
+			} else {
+				min_time = 60;
+				sec_time = 00;
+			}
+			tm1637DisplayTime(min_time, sec_time, 1);
+			break;
+		case (uint8_t)'W':
+			if (min_time >= 59 && sec_time >= 50){
+				min_time = 60;
+				sec_time = 00;
+			}	else if (min_time == 60) {
+				sec_time = 00;
+			} else {
+				if (sec_time > 59){
+					sec_time =- 50;
+					min_time += 1;
+				} else {
+					sec_time += 10;
+				}
+			}
+			tm1637DisplayTime(min_time, sec_time, 1);
+			break;
+		case (uint8_t)'X':
+		  min_time = COUNTDOWN_MIN;
+		  sec_time = COUNTDOWN_SEC;
+			tm1637DisplayTime(min_time, sec_time, 1);
+			break;
+		case (uint8_t)'Y':
+			time_flag = 1;
+			break;
+		case (uint8_t)'Z':
+			time_flag = 0;
+			break;
 		default:
 			break;
 		}
 	}
 }
-
 
 /**
   * @brief  Main program.
@@ -211,35 +248,10 @@ int main(void)
 	// ------------- //
 	// Infinite Loop //
 	// ------------- //
+  int curr_time = 0;
+
   while (1) {
   	if (check_microSD_conn() == PASS){
-  		/*
-  		switch(UART6_rxBuffer[0]){
-  		case (uint8_t)'R':
-  			LED_color = RED;
-  			transmit_uart("Red\r\n");
-  		  //lock_5sec(LOCK1_GPIO_Port, LOCK1_Pin);
-  			break;
-  		case (uint8_t)'G':
-  			LED_color = GREEN;
-  			transmit_uart("Green\r\n");
-  			break;
-  		case (uint8_t)'B':
-  			LED_color = BLUE;
-  			transmit_uart("Blue\r\n");
-  			break;
-  		case (uint8_t)'P':
-  			LED_color = PURPLE;
-  			transmit_uart("Purple\r\n");
-  			break;
-  		case (uint8_t)'O':
-  			LED_color = ORANGE;
-  			transmit_uart("Orange\r\n");
-  		  break;
-  		default:
-  			break;
-  		}
-			*/
 
   		// Check status of LED strip
   		switch(LED_color){
@@ -262,68 +274,43 @@ int main(void)
   			break;
   		}
 
-  		// Check status of solenoid
+  		// Iterate through each lock
+			for (int idx = 0; idx < NUM_OF_LOCKS; idx++) {
+				// Check if lock flag is set
+				if (lock_flag_arr[idx] == 1){
+					// Clear lock flag
+					lock_flag_arr[idx] = 0;
 
+					// Check if unlocking is already in progress
+					if (lock_prog_arr[idx] == 1){
+						transmit_uart("Unlocking already in progress. Do nothing.\r\n");
+					} else {
+						// Set in progress flag
+						lock_prog_arr[idx] = 1;
 
-  		//_tm1637Start();
-  		// Solenoid 1
-  		/*
-  		if (HAL_GPIO_ReadPin(BUTTON1_GPIO_Port, BUTTON1_Pin)) {
-    		transmit_uart("Button 1 Pressed!\r\n");
-    		HAL_GPIO_WritePin(LOCK1_GPIO_Port, LOCK1_Pin, GPIO_PIN_SET);
-    		LED_color = GREEN;
-  			time_flag = !time_flag;	//Toggle flag to countdown timer
-    	} else {
-    		HAL_GPIO_WritePin(LOCK1_GPIO_Port, LOCK1_Pin, GPIO_PIN_RESET);
-    	}
+						// Log start time of unlocking
+						if (timer_cnt > MAX_TIMER - UNLOCK_DELAY) {
+							end_time_arr[idx] = (timer_cnt + UNLOCK_DELAY) - MAX_TIMER;
+						} else {
+							end_time_arr[idx] = timer_cnt + UNLOCK_DELAY;
+						}
+					}
+				}
 
-    	// Solenoid 2
-    	if (HAL_GPIO_ReadPin(BUTTON2_GPIO_Port, BUTTON2_Pin)){
-    		transmit_uart("Button 2 Pressed!\r\n");
-    		HAL_GPIO_WritePin(LOCK2_GPIO_Port, LOCK2_Pin, GPIO_PIN_SET);
-    		LED_color = ORANGE;
-    	} else {
-    		HAL_GPIO_WritePin(LOCK2_GPIO_Port, LOCK2_Pin, GPIO_PIN_RESET);
-    	}
+				// Check if unlock is already in progress
+				if (lock_prog_arr[idx] == 1){
+					curr_time = timer_cnt;
 
-  		if (HAL_GPIO_ReadPin(BUTTON2_GPIO_Port, BUTTON2_Pin)) {
-    		transmit_uart("Button 2 Pressed!\r\n");
-  			solenoid_control(LOCK2_GPIO_Port, LOCK1_Pin, ON);
-  		} else {
-    		solenoid_control(LOCK2_GPIO_Port, LOCK1_Pin, OFF);
-  		}
-
-    	// Solenoid 3
-    	if (HAL_GPIO_ReadPin(BUTTON3_GPIO_Port, BUTTON3_Pin)){
-    		transmit_uart("Button 3 Pressed!\r\n");
-    		HAL_GPIO_WritePin(LOCK3_GPIO_Port, LOCK3_Pin, GPIO_PIN_SET);
-    		LED_color = BLUE;
-    	} else {
-    		HAL_GPIO_WritePin(LOCK3_GPIO_Port, LOCK3_Pin, GPIO_PIN_RESET);
-    	}
-
-    	// Solenoid 4
-    	if (HAL_GPIO_ReadPin(BUTTON4_GPIO_Port, BUTTON4_Pin)){
-    		transmit_uart("Button 4 Pressed!\r\n");
-    		HAL_GPIO_WritePin(LOCK4_GPIO_Port, LOCK4_Pin, GPIO_PIN_SET);
-    		LED_color = RED;
-    	} else {
-    		HAL_GPIO_WritePin(LOCK4_GPIO_Port, LOCK4_Pin, GPIO_PIN_RESET);
-    	}
-
-    	// Solenoid 5
-    	if (HAL_GPIO_ReadPin(BUTTON5_GPIO_Port, BUTTON5_Pin)){
-    		transmit_uart("Button 5 Pressed!\r\n");
-    		HAL_GPIO_WritePin(LOCK5_GPIO_Port, LOCK5_Pin, GPIO_PIN_SET);
-    		LED_color = PURPLE;
-    	} else {
-    		HAL_GPIO_WritePin(LOCK5_GPIO_Port, LOCK5_Pin, GPIO_PIN_RESET);
-    	}
-			*/
-
-    	// Clear buffer
-  		//memset(UART6_rxBuffer, '\0', sizeof(UART6_rxBuffer));
-
+					if (curr_time == end_time_arr[idx]){
+						HAL_GPIO_WritePin(lock_port_arr[idx], lock_pin_arr[idx], GPIO_PIN_RESET);
+						lock_prog_arr[idx] = 0;
+						end_time_arr[idx] = 0;
+						transmit_uart("Locking\r\n");
+					} else {
+						HAL_GPIO_WritePin(lock_port_arr[idx], lock_pin_arr[idx], GPIO_PIN_SET);
+					}
+				}
+			}
   	} else {
   		while (check_microSD_conn() == FAIL){
   			transmit_uart("MicroSD card not detected!\r\n");
@@ -599,25 +586,13 @@ static void MX_TIM3_Init(void)
 /* TIM3 interrupt called every second */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim3){
 
-	// Start lock countdown if enabled
-	if (start_lockdown == 1){
-		lock_counter = 5;
-
-		start_lockdown = 0;
-		lock_progress = 1;
+	if (timer_cnt == MAX_TIMER) {
+		timer_cnt = 0;
+	} else {
+		timer_cnt++;
 	}
 
-	// Countdown lock counter
-	if (lock_progress == 1){
-		lock_counter--;
-		transmit_uart("Counting down...\r\n");
-		if (lock_counter == 0){
-			lock_progress = 0;
-			transmit_uart("Done locking.\r\n");
-		}
-	}
-
-	//transmit_uart("time\r\n");
+	//int2uart(timer_cnt);
 
 	if (time_flag == 1){
 		if (min_time == 0 && sec_time == 0){
